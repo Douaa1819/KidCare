@@ -1,0 +1,156 @@
+{
+  "name": "Petitspas - IA Résumé de la journée",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "petitspas/ai-resume-journee",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0d9f2f7d-7cf2-4f86-9f7f-7e46f8d2f5f2",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = ($json.body?.text ?? $json.text ?? '').toString().trim();\n\nif (!rawText) {\n  throw new Error('Le champ \"text\" est requis.');\n}\n\nreturn [\n  {\n    json: {\n      sourceText: rawText,\n    },\n  },\n];"
+      },
+      "id": "6d7b70f8-7744-4fe8-b754-38c9b1aaf9d4",
+      "name": "Préparer entrée",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.OPENAI_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.3,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Tu es assistant de rédaction pour une crèche. Reformule uniquement les informations fournies dans le texte source, sans rien inventer. Rédige un message en français destiné aux parents avec un ton chaleureux, professionnel et simple. Le message doit être clair, rassurant et naturel. Retourne uniquement le message final, sans titre, sans puces, sans préfixe.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Texte source :\\n\" + $json.sourceText\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "id": "9af7bb77-28e5-4f79-94f8-b90f9f7f19f6",
+      "name": "OpenAI - Générer message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f4f9a7f8-e8a0-4675-a4d2-a2d32e801f18",
+              "name": "message",
+              "value": "={{ ($json.choices?.[0]?.message?.content || '').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "keepOnlySet": true
+        }
+      },
+      "id": "6f4fe6e0-5db3-4af6-a4d8-f26f9d4fd0b6",
+      "name": "Formater sortie",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"message\": $json.message } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "74a20b96-f773-4128-86fd-63a3af4ca3cf",
+      "name": "Réponse Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Préparer entrée",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer entrée": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Générer message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Générer message": {
+      "main": [
+        [
+          {
+            "node": "Formater sortie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formater sortie": {
+      "main": [
+        [
+          {
+            "node": "Réponse Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "d0356e0d-6f0e-4b72-bf78-6c34ab92e4c8"
+}
