@@ -12,8 +12,8 @@ L’objectif du projet est de fournir une **plateforme moderne et centralisée**
 Elle permet de suivre les inscriptions, la présence des enfants, la communication avec les parents et la gestion quotidienne d’une crèche maternelle.
 
 Ce dépôt contient **deux applications** :
-- `creche-frontend` : application web (Next.js/React) utilisée par les admins, enseignants et parents.
-- `creche-api` : API backend (NestJS) qui expose les fonctionnalités métier et communique avec la base de données via Prisma.
+- `frontend` : application web (Next.js/React) utilisée par les admins, enseignants et parents.
+- `backend` : API backend (NestJS) qui expose les fonctionnalités métier et communique avec la base de données via Prisma.
 
 ---
 
@@ -64,12 +64,12 @@ Le projet est structuré en **monorepo** avec deux dossiers principaux :
 
 ```text
 creche-saas/
-  ├─ creche-frontend/   # Application web (Next.js, React, Tailwind)
-  ├─ creche-api/        # API backend (NestJS, Prisma, PostgreSQL ou équivalent)
+  ├─ frontend/        # Application web (Next.js, React, Tailwind)
+  ├─ backend/         # API backend (NestJS, Prisma, PostgreSQL ou équivalent)
   └─ README.md          # Ce fichier
 ```
 
-### creche-frontend
+### frontend
 
 Application Next.js moderne, avec :
 - **Next.js 16** (App Router) et **React 19**.
@@ -87,7 +87,7 @@ Fonctionnalités côté frontend :
 - Pages de gestion pour les admins (enfants, inscriptions, etc.).
 - Composants UI (sidebar, tableaux, formulaires, etc.).
 
-### creche-api
+### backend
 
 API backend construite avec :
 - **NestJS 11** (framework Node.js orienté architecture modulaire).
@@ -119,17 +119,17 @@ Dans le dossier racine `creche-saas`, installer séparément les dépendances du
 
 ```bash
 # Frontend
-cd creche-frontend
+cd frontend
 npm install
 
 # Backend API
-cd ../creche-api
+cd ../backend
 npm install
 ```
 
 ### 3. Configuration des variables d’environnement
 
-#### Frontend (`creche-frontend`)
+#### Frontend (`frontend`)
 Créer un fichier `.env.local` (ou équivalent) avec par exemple :
 
 ```env
@@ -137,13 +137,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
-#### API (`creche-api`)
+#### API (`backend`)
 Créer un fichier `.env` avec au minimum :
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/petitspas"
 NODE_ENV=development
-APP_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3001
+# Liens dans les emails (mot de passe oublié, invitation). En local, ne pas utiliser un domaine non déployé.
 
 # Config SMTP (email)
 SMTP_HOST=...
@@ -157,7 +158,7 @@ Adapter ces valeurs selon votre environnement.
 
 ### 4. Lancer l’API (backend)
 
-Depuis `creche-api` :
+Depuis `backend` :
 
 ```bash
 # Lancer en mode développement
@@ -171,7 +172,7 @@ Par défaut, l’API écoute généralement sur `http://localhost:3000`.
 
 ### 5. Lancer le frontend
 
-Depuis `creche-frontend` :
+Depuis `frontend` :
 
 ```bash
 npm run dev
