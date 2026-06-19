@@ -13,6 +13,7 @@ import { USER_STATUS_BADGE_VARIANT } from "@/lib/design/status-badges";
 import type { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "next-intl";
 import { withLocalePath } from "@/lib/i18n/locale-path";
+import { apiClient } from "@/lib/api";
 import { SimpleConfirmDialog } from "@/components/ui/simple-confirm-dialog";
 import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
 import { isValidEmail, isValidName } from "@/lib/form-validation";

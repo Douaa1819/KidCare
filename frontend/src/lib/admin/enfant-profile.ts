@@ -87,7 +87,7 @@ function mergeUniqueTags(...lists: (string[] | undefined | null)[]): string[] {
       if (typeof item === "string" && item.trim()) set.add(item.trim());
     }
   }
-  return [...set];
+  return Array.from(set);
 }
 
 function resolveClasseLabel(

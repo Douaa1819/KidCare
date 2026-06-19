@@ -1,5 +1,12 @@
 /** Petitspas semantic status styles — use with Badge variant or pp-badge-* classes */
 
+import type { VariantProps } from "class-variance-authority"
+import type { badgeVariants } from "@/components/ui/badge"
+
+export type BadgeVariantName = NonNullable<
+  VariantProps<typeof badgeVariants>["variant"]
+>
+
 export type InscriptionStatusCode =
   | "CANDIDATURE"
   | "EN_COURS"
@@ -7,19 +14,6 @@ export type InscriptionStatusCode =
   | "REJETEE"
   | null
   | undefined
-
-export type BadgeVariantName =
-  | "review"
-  | "progress"
-  | "accepted"
-  | "rejected"
-  | "neutral"
-  | "present"
-  | "absent"
-  | "active"
-  | "disabled"
-  | "archived"
-  | "invited"
 
 export function inscriptionStatusBadgeVariant(
   code: InscriptionStatusCode,

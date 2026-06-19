@@ -14,6 +14,8 @@ type AuthShellProps = {
   backLabel?: string
   /** md = login card, lg = multi-step forms */
   maxWidth?: "md" | "lg"
+  /** Skip outer auth-card wrapper (multi-step flows with their own cards) */
+  bareContent?: boolean
   /** Soft logo entrance + float animation (login page) */
   animateLogo?: boolean
 }
