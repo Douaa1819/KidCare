@@ -6,9 +6,10 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { SidebarNew } from "@/components/layout/sidebar-new"
 import { AdminMainContent } from "@/components/layout/sidebar-context";
-import { apiClient } from "@/lib/api";
+import { USER_STATUS_BADGE_VARIANT } from "@/lib/design/status-badges";
 import type { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "next-intl";
 import { withLocalePath } from "@/lib/i18n/locale-path";
@@ -16,6 +17,7 @@ import { SimpleConfirmDialog } from "@/components/ui/simple-confirm-dialog";
 import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
 import { isValidEmail, isValidName } from "@/lib/form-validation";
 import { IntlError, IntlErrorCode } from "next-intl";
+import { AdminListPagination } from "@/components/admin/admin-list-pagination";
 
 interface TeachersPageProps {
   params: Promise<{ locale: Locale }>;
@@ -38,14 +40,6 @@ interface TeacherItem {
 }
 
 const TEACHERS_PAGE_SIZE = 10;
-
-/** Survol plus visible que le variant outline par défaut (accent trop clair). */
-const ADMIN_OUTLINE_BTN =
-  "border-slate-300 bg-white text-slate-800 shadow-sm hover:bg-slate-100 hover:border-slate-400 hover:text-slate-900";
-const ADMIN_DANGER_OUTLINE_BTN =
-  "border-red-400 bg-white text-red-700 shadow-sm hover:bg-red-100 hover:border-red-500 hover:text-red-800";
-const ADMIN_PRIMARY_BTN =
-  "bg-sky-600 text-white shadow-sm hover:bg-sky-700 active:bg-sky-800 border border-sky-700";
 
 const TEACHERS_FALLBACK: Record<Locale, Record<string, string>> = {
   fr: {
@@ -319,11 +313,7 @@ export default function TeachersPage({ params }: TeachersPageProps) {
     }
   };
 
-  const statutColor = (s: string) => {
-    if (s === "ACTIVE") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-    if (s === "INVITED") return "bg-amber-100 text-amber-700 border-amber-200";
-    return "bg-gray-100 text-gray-500 border-gray-200";
-  };
+  const statutBadgeVariant = (s: string) => USER_STATUS_BADGE_VARIANT[s] ?? "neutral";
 
   const isInvitationExpired = (teacher: TeacherItem) => {
     if (teacher.statut !== "INVITED" || !teacher.inviteLe) return false;
@@ -376,7 +366,7 @@ export default function TeachersPage({ params }: TeachersPageProps) {
               </p>
             </div>
             <Link href={withLocalePath(currentLocale, "/admin")}>
-              <Button variant="outline" className={ADMIN_OUTLINE_BTN}>
+              <Button variant="outline">
                 {tt("backDashboard")}
               </Button>
             </Link>
@@ -421,7 +411,7 @@ export default function TeachersPage({ params }: TeachersPageProps) {
               <Button
                 onClick={handleCreateTeacher}
                 disabled={creating}
-                className={`whitespace-nowrap ${ADMIN_PRIMARY_BTN}`}
+                className="whitespace-nowrap"
               >
                 {creating ? tt("creating") : t("invite")}
               </Button>
@@ -454,22 +444,21 @@ export default function TeachersPage({ params }: TeachersPageProps) {
 
                     {/* Statut + link to profile */}
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border uppercase ${statutColor(teacher.statut)}`}>
+                      <Badge variant={statutBadgeVariant(teacher.statut)} className="uppercase">
                         {statutLabel(teacher)}
-                      </span>
+                      </Badge>
                       {teacher.statut === "INVITED" && (
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="destructive-outline"
                           size="sm"
-                          className={ADMIN_DANGER_OUTLINE_BTN}
                           onClick={() => setCancelInviteTarget(teacher)}
                         >
                           {t("cancelInvite")}
                         </Button>
                       )}
                       <Link href={withLocalePath(currentLocale, `/admin/utilisateurs/${teacher.userId}`)}>
-                        <Button variant="outline" size="sm" className={ADMIN_OUTLINE_BTN}>
+                        <Button variant="outline" size="sm">
                           {t("profile")}
                         </Button>
                       </Link>
@@ -535,7 +524,6 @@ export default function TeachersPage({ params }: TeachersPageProps) {
                         </select>
                         <Button
                           size="sm"
-                          className={ADMIN_PRIMARY_BTN}
                           onClick={() => handleAssignClass(teacher.userId)}
                           disabled={assignLoading || !selectedClassId}
                         >
@@ -544,7 +532,6 @@ export default function TeachersPage({ params }: TeachersPageProps) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={ADMIN_OUTLINE_BTN}
                           onClick={() => { setAssigningTeacherId(null); setSelectedClassId(""); }}
                         >
                           {t("cancel")}
@@ -554,7 +541,6 @@ export default function TeachersPage({ params }: TeachersPageProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className={ADMIN_OUTLINE_BTN}
                         onClick={() => { setAssigningTeacherId(teacher.userId); setSelectedClassId(""); }}
                         disabled={availableClasses(teacher).length === 0}
                       >
@@ -564,41 +550,14 @@ export default function TeachersPage({ params }: TeachersPageProps) {
                   </div>
                 </Card>
               ))}
-              {totalPages > 1 ? (
-                <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    {tt("paginationRange", {
-                      from: (currentPage - 1) * TEACHERS_PAGE_SIZE + 1,
-                      to: Math.min(currentPage * TEACHERS_PAGE_SIZE, teachers.length),
-                      total: teachers.length,
-                    })}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={ADMIN_OUTLINE_BTN}
-                      disabled={currentPage <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    >
-                      {t("prev")}
-                    </Button>
-                    <span className="px-2 text-xs font-semibold text-muted-foreground">
-                      {currentPage}/{totalPages}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={ADMIN_OUTLINE_BTN}
-                      disabled={currentPage >= totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    >
-                      {t("next")}
-                    </Button>
-                  </div>
-                </div>
+              {teachers.length > 0 ? (
+                <AdminListPagination
+                  page={currentPage}
+                  totalPages={totalPages}
+                  totalItems={teachers.length}
+                  pageSize={TEACHERS_PAGE_SIZE}
+                  onPageChange={setPage}
+                />
               ) : null}
             </div>
           )}

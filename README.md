@@ -11,9 +11,11 @@ L’objectif du projet est de fournir une **plateforme moderne et centralisée**
 
 Elle permet de suivre les inscriptions, la présence des enfants, la communication avec les parents et la gestion quotidienne d’une crèche maternelle.
 
-Ce dépôt contient **deux applications** :
-- `frontend` : application web (Next.js/React) utilisée par les admins, enseignants et parents.
-- `backend` : API backend (NestJS) qui expose les fonctionnalités métier et communique avec la base de données via Prisma.
+Ce dépôt contient **deux dossiers uniquement** :
+- `frontend/` — application web (Next.js) : login, admin, enseignant, parent
+- `backend/` — API (NestJS + Prisma)
+
+> Ne pas utiliser d'autres copies (`creche-api`, `creche-frontend`) — elles ont été supprimées.
 
 ---
 
@@ -118,14 +120,18 @@ Fonctionnalités côté API :
 Dans le dossier racine `creche-saas`, installer séparément les dépendances du frontend et de l’API :
 
 ```bash
-# Frontend
-cd frontend
-npm install
+# Terminal 1 — API (port 3000)
+cd backend
+pnpm install
+pnpm run start:dev
 
-# Backend API
-cd ../backend
-npm install
+# Terminal 2 — Frontend (port 3001)
+cd frontend
+pnpm install
+pnpm run dev
 ```
+
+Puis ouvrir **http://localhost:3001/fr** (login).
 
 ### 3. Configuration des variables d’environnement
 

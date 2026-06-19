@@ -123,6 +123,9 @@ export class EnfantsService {
         famille: {
           select: {
             id: true,
+            emailPrincipal: true,
+            languePreferee: true,
+            adresseFacturation: true,
             tuteurs: {
               select: {
                 id: true,
@@ -133,6 +136,15 @@ export class EnfantsService {
                 adresse: true,
                 lien: true,
                 principal: true,
+                utilisateur: {
+                  select: {
+                    id: true,
+                    statut: true,
+                    archivedAt: true,
+                    activeLe: true,
+                    inviteLe: true,
+                  },
+                },
               },
             },
           },

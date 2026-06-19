@@ -66,6 +66,6 @@ export const AUDIT_CATEGORY_STYLES: Record<AuditActionCategory, string> = {
   user: "bg-violet-50 text-violet-700 border-violet-200",
   security: "bg-orange-50 text-orange-700 border-orange-200",
   settings: "bg-slate-100 text-slate-700 border-slate-200",
-  entity: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  entity: "pp-surface-success border",
   other: "bg-gray-50 text-gray-600 border-gray-200",
 };

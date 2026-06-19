@@ -65,9 +65,8 @@ export class ClassActivityPhotosService {
     if (!utilisateur?.tuteur) {
       throw new ForbiddenException('Tuteur introuvable');
     }
-    const ok = utilisateur.tuteur.famille.enfants.some(
-      (e) => e.classeId === classeId,
-    );
+    const enfants = utilisateur.tuteur.famille?.enfants ?? [];
+    const ok = enfants.some((e) => e.classeId === classeId);
     if (!ok) {
       throw new ForbiddenException("Aucun enfant dans cette classe");
     }
@@ -78,7 +77,7 @@ export class ClassActivityPhotosService {
     role: string,
     query: ListActivityPhotosQueryDto,
   ) {
-    const { classeId, date, dateFrom, dateTo } = query;
+    const { classeId, date, dateFrom, dateTo, page = 1, limit = 50 } = query;
 
     if (role === 'PARENT') {
       await this.assertParentChildInClasse(utilisateurId, classeId);
@@ -135,18 +134,27 @@ export class ClassActivityPhotosService {
       }
     }
 
-    const rows = await this.prisma.classActivityPhoto.findMany({
-      where,
-      orderBy: [{ date: 'desc' }, { creeLe: 'desc' }],
-      select: {
-        id: true,
-        classeId: true,
-        date: true,
-        mimeType: true,
-        legende: true,
-        creeLe: true,
-      },
-    });
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [total, rows] = await Promise.all([
+      this.prisma.classActivityPhoto.count({ where }),
+      this.prisma.classActivityPhoto.findMany({
+        where,
+        orderBy: [{ date: 'desc' }, { creeLe: 'desc' }],
+        skip,
+        take: safeLimit,
+        select: {
+          id: true,
+          classeId: true,
+          date: true,
+          mimeType: true,
+          legende: true,
+          creeLe: true,
+        },
+      }),
+    ]);
 
     return {
       data: rows.map((r) => ({
@@ -157,6 +165,12 @@ export class ClassActivityPhotosService {
         legende: r.legende,
         creeLe: r.creeLe.toISOString(),
       })),
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        pages: Math.ceil(total / safeLimit) || 0,
+      },
     };
   }
 

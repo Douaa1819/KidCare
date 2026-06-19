@@ -32,7 +32,7 @@ export default function PlatformDashboardPage({ params }: { params: Promise<{ lo
     { label: t("admins"), value: stats?.admins, icon: Shield, color: "text-indigo-600" },
     { label: t("teachers"), value: stats?.teachers, icon: GraduationCap, color: "text-blue-600" },
     { label: t("parents"), value: stats?.parents, icon: Users, color: "text-cyan-600" },
-    { label: t("activeUsers"), value: stats?.activeUsers, icon: UserCheck, color: "text-emerald-600" },
+    { label: t("activeUsers"), value: stats?.activeUsers, icon: UserCheck, color: "pp-text-success" },
     { label: t("disabledUsers"), value: stats?.disabledUsers, icon: UserX, color: "text-orange-600" },
     { label: t("audit24h"), value: stats?.auditLast24h, icon: ScrollText, color: "text-violet-600" },
   ];

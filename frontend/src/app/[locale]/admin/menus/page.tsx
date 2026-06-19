@@ -310,7 +310,7 @@ export default function MenusPage({ params }: { params: Promise<{ locale: Locale
               <Button
                 size="sm"
                 onClick={() => { setWeekModal(true); setWeekErr(null); setWeekForm({ collationMatin: "", repas: "", gouter: "" }); }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-primary text-primary-foreground"
               >
                 <span className="hidden sm:inline">{t("ui.addWeekFull")}</span>
                 <span className="sm:hidden">{t("ui.addWeekShort")}</span>
@@ -327,11 +327,11 @@ export default function MenusPage({ params }: { params: Promise<{ locale: Locale
                 </Button>
               )}
               <Button
-                variant="outline"
+                variant="destructive-outline"
                 size="sm"
                 onClick={confirmAndDeleteWeek}
                 disabled={weekDates.every(d => !allMenus[d]?.id)}
-                className="text-destructive border-destructive/40 hover:bg-destructive/10 disabled:opacity-40"
+                className="disabled:opacity-40"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 <span className="hidden sm:inline">{t("ui.deleteWeekFull")}</span>
@@ -579,9 +579,9 @@ export default function MenusPage({ params }: { params: Promise<{ locale: Locale
                 {t("ui.cancel")}
               </Button>
               <Button
+                variant="destructive"
                 onClick={handleDeleteWeek}
                 disabled={deleting}
-                className="bg-destructive hover:bg-destructive/90 text-white"
               >
                 {deleting ? t("ui.deleting") : t("ui.yesDelete")}
               </Button>

@@ -42,6 +42,12 @@ export function I18nProvider({
     router.push(newPath);
   };
 
+  // Sync when the route locale changes (e.g. FR ↔ AR toggle on public pages).
+  useEffect(() => {
+    setLocale(initialLocale);
+    setDir(getLocaleDirection(initialLocale));
+  }, [initialLocale]);
+
   // Update document direction when locale changes
   useEffect(() => {
     const newDir = getLocaleDirection(locale);

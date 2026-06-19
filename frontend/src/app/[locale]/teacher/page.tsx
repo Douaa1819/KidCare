@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -17,6 +18,7 @@ import { useTeacherClass } from "@/components/teacher/teacher-class-context"
 import { childKey } from "@/lib/child-id"
 import { saveChildDailyResume } from "@/lib/teacher-resume-sync"
 import { statsFromAttendanceMap } from "@/lib/teacher-class-day-stats"
+import { presenceBadgeVariant } from "@/lib/design/status-badges"
 import { ResumeMetricIcon, ResumeSectionIcon } from "@/components/resume-metric-icon"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -330,11 +332,11 @@ export default function TeacherDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-emerald-600">{nbPresent}</p>
+            <p className="text-2xl font-bold pp-text-success">{nbPresent}</p>
             <p className="text-xs text-gray-500 mt-0.5">Présents</p>
           </div>
           <div className="rounded-xl border bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-red-500">{nbAbsent}</p>
+            <p className="text-2xl font-bold text-[var(--status-rejected-text)]">{nbAbsent}</p>
             <p className="text-xs text-gray-500 mt-0.5">Absents</p>
           </div>
           <div className="rounded-xl border bg-white p-3 text-center shadow-sm">
@@ -349,10 +351,6 @@ export default function TeacherDashboard() {
             const ck = childKey(child.id)
             const presence  = attendanceData[ck]
             const hasResume = !!childResumes[ck]
-            const presenceBadge =
-              presence === "Present" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
-              presence === "Absent"  ? "bg-red-100 text-red-700 border-red-200" :
-              "bg-gray-100 text-gray-500 border-gray-200"
             const presenceLabel = presence === "Present" ? "Présent" : presence === "Absent" ? "Absent" : "Non marqué"
 
             return (
@@ -370,7 +368,9 @@ export default function TeacherDashboard() {
                 <p className="text-xs font-semibold text-center text-gray-900 leading-tight line-clamp-2">
                   {`${child.prenom ?? ""} ${child.nom ?? ""}`.trim()}
                 </p>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${presenceBadge}`}>{presenceLabel}</span>
+                <Badge variant={presenceBadgeVariant(presence)} className="text-[10px]">
+                  {presenceLabel}
+                </Badge>
                 {presence !== "Absent" && hasResume && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full border bg-sky-50 text-sky-700 border-sky-200 font-medium inline-flex items-center gap-0.5">
                     Résumé <Check className="w-3 h-3" aria-hidden />
@@ -384,7 +384,7 @@ export default function TeacherDashboard() {
         {canNavigateToSummary && (
           <div className="flex justify-end">
             <Link href={`/${locale}/teacher/summary`}>
-              <Button className="bg-sky-500 hover:bg-sky-600 text-white">{t("summaryCta")} →</Button>
+              <Button className="flex-1">{t("summaryCta")} →</Button>
             </Link>
           </div>
         )}
@@ -469,17 +469,19 @@ export default function TeacherDashboard() {
                 <div className="flex gap-3">
                   <Button
                     type="button"
+                    variant="success"
                     onClick={() => handlePresence("Present")}
                     disabled={attendanceData[currentCk] !== undefined}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex-1 text-sm font-semibold py-2 rounded-lg"
                   >
                     <CheckCircle className="w-4 h-4 mr-1.5" />{t("presentButton")}
                   </Button>
                   <Button
                     type="button"
+                    variant="destructive"
                     onClick={() => handlePresence("Absent")}
                     disabled={attendanceData[currentCk] !== undefined}
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex-1 text-sm font-semibold py-2 rounded-lg"
                   >
                     <XCircle className="w-4 h-4 mr-1.5" />{t("absentButton")}
                   </Button>
@@ -488,19 +490,19 @@ export default function TeacherDashboard() {
                 {/* Status badge */}
                 <div className="text-xs">
                   {attendanceData[currentCk] === "Absent" ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-red-50 text-red-600 border-red-200">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border pp-surface-rejected text-xs">
                       Absent — pas de résumé requis
                     </span>
                   ) : attendanceData[currentCk] !== undefined && childResumes[currentCk] ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-300">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border pp-surface-success text-xs">
                       <Check className="w-3 h-3" aria-hidden /> Présence & résumé faits
                     </span>
                   ) : attendanceData[currentCk] !== undefined ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-300">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border pp-surface-review text-xs">
                       Présence faite — résumé à renseigner
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-gray-50 text-gray-500 border-gray-200">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)] border-[var(--status-neutral-border)] text-xs">
                       Présence à enregistrer
                     </span>
                   )}
@@ -668,7 +670,7 @@ export default function TeacherDashboard() {
 
         {canNavigateToSummary ? (
           <Link href={`/${locale}/teacher/summary`}>
-            <Button className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-4 sm:px-9 py-2 sm:py-3 font-semibold text-xs sm:text-sm flex-shrink-0">
+            <Button className="rounded-lg px-4 sm:px-9 py-2 sm:py-3 font-semibold text-xs sm:text-sm flex-shrink-0">
               <span className="hidden sm:inline">{t("summaryCta")} </span>→
             </Button>
           </Link>
@@ -676,14 +678,14 @@ export default function TeacherDashboard() {
           <Button
             onClick={handleNext}
             disabled={!canLeaveCurrentChild}
-            className="bg-sky-500 hover:bg-sky-600 text-white rounded-lg px-4 sm:px-7 py-2 font-semibold text-xs sm:text-sm flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg px-4 sm:px-7 py-2 font-semibold text-xs sm:text-sm flex-shrink-0"
           >
             <span className="hidden sm:inline">{t("next")} </span>→
           </Button>
         )}
       </div>
       {viewMode === "individual" && reviewNavHint && (
-        <p className={`text-center text-xs mt-2 px-2 ${isAllProcessed ? "text-emerald-700" : "text-amber-800"}`}>
+        <p className={`text-center text-xs mt-2 px-2 ${isAllProcessed ? "pp-text-success" : "text-[var(--status-review-text)]"}`}>
           {reviewNavHint}
         </p>
       )}

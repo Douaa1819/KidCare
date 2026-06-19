@@ -94,7 +94,7 @@
       "profileSaved": "Informations mises à jour.",
       "profileLoadError": "Impossible de charger vos informations.",
       "profileSaveError": "Impossible d’enregistrer vos informations.",
-      "phoneInvalid": "Numéro invalide — format marocain attendu (ex : 0612345678)."
+      "phoneInvalid": "Numéro de téléphone invalide."
     },
     "dashboard": {
       "title": "Dashboard Parent",
@@ -280,7 +280,7 @@
       "authorizedTitle": "Personnes autorisées",
       "authorizedSectionSubtitle": "Personnes autorisées à récupérer l’enfant ou à être contactées en cas de besoin.",
       "authorizedAddCta": "Ajouter une personne",
-      "delegationPhoneHint": "Format international recommandé (ex. +212 6 12 34 56 78).",
+      "delegationPhoneHint": "Sélectionnez le pays MENA puis saisissez le numéro local.",
       "add": "Ajouter",
       "noAuthorized": "Aucune personne autorisée.",
       "newAuthorized": "Nouvelle personne autorisée",
@@ -378,6 +378,7 @@
     "inscription": "Inscription",
     "invalidLogin": "Email ou mot de passe incorrect",
     "forgotPasswordLink": "Mot de passe oublié ?",
+    "forgotPasswordLinkClass": "text-xs font-semibold text-[#FF6F61] hover:text-[#e45f54] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
     "emailLabel": "Email",
     "passwordLabel": "Mot de passe",
     "emailPlaceholder": "exemple@thepetitspas.com",
@@ -386,6 +387,7 @@
     "submitting": "Connexion…",
     "notRegistered": "Pas encore inscrit ?",
     "inscriptionLink": "Accéder au formulaire d'inscription",
+    "inscriptionLinkClass": "font-semibold text-accent hover:text-accent/80 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
     "errors": {
       "invalidEmail": "Adresse email invalide.",
       "fixEmail": "Veuillez corriger l'adresse email.",
@@ -504,6 +506,124 @@
       "restoreChildSuccess": "Enfant restauré.",
       "archiveChildSuccess": "Enfant archivé.",
       "readOnly": "Lecture seule",
+      "profile": {
+        "emptyValue": "Non renseigné",
+        "loading": "Chargement de la fiche enfant…",
+        "notFound": "Fiche enfant introuvable.",
+        "sections": {
+          "identity": "Informations enfant",
+          "health": "Santé et alimentation",
+          "parents": "Parents / tuteurs",
+          "emergency": "Contacts d'urgence",
+          "authorized": "Personnes autorisées",
+          "documents": "Documents",
+          "registration": "Dossier d'inscription",
+          "consents": "Déclarations et consentements",
+          "adminRemarks": "Remarques admin",
+          "parentRemarks": "Remarques parent"
+        },
+        "groups": {
+          "schooling": "Scolarité",
+          "civilStatus": "État civil",
+          "residence": "Adresse de résidence",
+          "siblings": "Fratrie",
+          "familyInfo": "Informations famille",
+          "healthAlerts": "Alertes santé",
+          "medicalFile": "Dossier médical"
+        },
+        "fields": {
+          "fullName": "Nom complet",
+          "dateOfBirth": "Date de naissance",
+          "age": "Âge",
+          "gender": "Genre",
+          "birthCity": "Ville de naissance",
+          "nationality": "Nationalité",
+          "currentAddress": "Adresse actuelle",
+          "currentCity": "Ville actuelle",
+          "class": "Classe assignée",
+          "classLevel": "Niveau",
+          "desiredClass": "Classe souhaitée",
+          "siblingCount": "Nombre de frères et sœurs",
+          "siblingRank": "Rang dans la fratrie",
+          "height": "Taille",
+          "weight": "Poids",
+          "familyHistory": "Antécédents familiaux",
+          "surgicalInterventions": "Interventions chirurgicales",
+          "doctor": "Médecin traitant",
+          "medicalNotes": "Notes médicales",
+          "dietaryNotes": "Détails alimentaires",
+          "dietaryRestriction": "Restriction alimentaire",
+          "familyEmail": "Email principal",
+          "familyLanguage": "Langue préférée",
+          "familySituation": "Situation familiale",
+          "billingAddress": "Adresse de facturation",
+          "registrationStatus": "Statut d'inscription",
+          "registrationDate": "Date de candidature",
+          "declarationHonneur": "Déclaration sur l'honneur",
+          "confirmationExacte": "Confirmation des informations",
+          "archivedAt": "Archivé le",
+          "cin": "CIN",
+          "phone": "Téléphone",
+          "email": "Email",
+          "address": "Adresse",
+          "profession": "Profession",
+          "relationship": "Lien"
+        },
+        "roles": {
+          "mother": "Mère",
+          "father": "Père",
+          "guardian": "Tuteur / proche"
+        },
+        "badges": {
+          "principal": "Responsable principal",
+          "archivedChild": "Enfant archivé",
+          "archivedAccount": "Compte archivé"
+        },
+        "gender": { "M": "Masculin", "F": "Féminin" },
+        "language": { "fr": "Français", "ar": "Arabe" },
+        "inscriptionStatus": {
+          "CANDIDATURE": "Candidature",
+          "EN_COURS": "En cours",
+          "ACTIF": "Actif",
+          "REJETEE": "Rejetée"
+        },
+        "accountStatus": {
+          "INVITED": "Invité",
+          "ACTIVE": "Actif",
+          "DISABLED": "Désactivé",
+          "ARCHIVED": "Archivé"
+        },
+        "restrictions": {
+          "sans_restriction": "Sans restriction",
+          "sans_porc": "Sans porc",
+          "vegetarien": "Végétarien",
+          "sans_gluten": "Sans gluten",
+          "autre": "Autre"
+        },
+        "consent": { "yes": "Oui", "no": "Non" },
+        "tags": {
+          "diseases": "Maladies / conditions",
+          "allergies": "Allergies",
+          "intolerances": "Intolérances"
+        },
+        "authorized": {
+          "noRestriction": "Toute personne majeure peut récupérer l'enfant (sans restriction)."
+        },
+        "documents": {
+          "childPhoto": "Photo de l'enfant",
+          "photoHint": "Photo transmise lors de l'inscription."
+        },
+        "delegations": {
+          "title": "Gérer les personnes autorisées",
+          "add": "Ajouter",
+          "addTitle": "Nouvelle personne autorisée",
+          "fullName": "Nom complet",
+          "fullNameRequired": "Le nom est obligatoire.",
+          "saveError": "Erreur lors de l'ajout.",
+          "deleteTitle": "Supprimer cette personne autorisée ?",
+          "deleteSuccess": "Personne autorisée supprimée."
+        }
+      },
       "saving": "Enregistrement…",
       "familySearch": {
         "placeholder": "Rechercher une famille par e-mail…",
@@ -559,6 +679,18 @@
       "loading": "Chargement des inscriptions…",
       "empty": "Aucune inscription trouvée.",
       "rejectPrompt": "Raison du rejet (optionnelle) :",
+      "rejectDialog": {
+        "title": "Refuser l'inscription",
+        "description": "Le parent recevra un email de notification. Si vous indiquez un motif, il sera inclus dans le message.",
+        "reasonLabel": "Motif du refus (optionnel)",
+        "reasonPlaceholder": "Ex. : Capacité atteinte pour cette tranche d'âge…",
+        "confirm": "Confirmer le refus",
+        "cancel": "Annuler",
+        "emailWithReason": "Inscription refusée. Le parent a été notifié par email (motif inclus).",
+        "emailWithoutReason": "Inscription refusée. Le parent a été notifié par email.",
+        "emailFailed": "Inscription refusée. L'email au parent n'a pas pu être envoyé."
+      },
+      "rejectReasonTitle": "Motif du refus",
       "errors": {
         "load": "Impossible de charger les inscriptions.",
         "accept": "Erreur lors de l'acceptation de l'inscription.",
@@ -1008,12 +1140,17 @@
       "createError": "Erreur lors de la création de l'événement.",
       "deleteConfirm": "Supprimer cet événement ?",
       "deleteError": "Erreur lors de la suppression de l'événement.",
+      "cancelConfirm": "Annuler cet événement ? Les parents de la classe recevront un email de notification.",
+      "cancelEvent": "Annuler l'événement",
+      "cancelError": "Erreur lors de l'annulation de l'événement.",
+      "cancelledBadge": "Annulé",
       "costFreeHint": "Laissez vide ou saisissez 0 pour un événement gratuit.",
       "costInvalid": "Le coût doit être un nombre valide.",
       "costNegative": "Le coût ne peut pas être négatif.",
       "successCreate": "Événement créé.",
       "successUpdate": "Événement mis à jour.",
       "successDelete": "Événement supprimé.",
+      "successCancel": "Événement annulé. Les parents ont été notifiés par email.",
       "formEdit": "Modifier un événement",
       "viewCalendar": "Calendrier",
       "viewList": "Liste",

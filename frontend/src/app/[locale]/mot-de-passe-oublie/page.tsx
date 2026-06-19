@@ -78,11 +78,11 @@ export default function ForgotPasswordPage({
         ) : null}
 
         <div className="space-y-2 text-left">
-          <label htmlFor="email" className="text-sm font-medium text-foreground">
+          <label htmlFor="email" className="auth-label">
             {t("emailLabel")}
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 auth-field-icon pointer-events-none" />
             <input
               id="email"
               type="email"
@@ -93,10 +93,10 @@ export default function ForgotPasswordPage({
                 setFieldError(null)
                 setError(null)
               }}
-              className={`w-full rounded-xl border bg-background pl-9 pr-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 ${
+              className={`auth-field auth-field-focus ${
                 fieldError
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-200"
-                  : "border-input focus:border-primary focus:ring-primary/40"
+                  ? "!border-red-400 focus:!border-red-500 focus:!ring-red-200"
+                  : ""
               }`}
               placeholder="exemple@thepetitspas.com"
             />
@@ -110,7 +110,7 @@ export default function ForgotPasswordPage({
           className="w-full font-semibold rounded-xl py-2.5"
           disabled={isSubmitting}
         >
-          <Send className="w-4 h-4 mr-2" />
+          <Send className="w-4 h-4 me-2" />
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>

@@ -153,6 +153,10 @@ class ApiClient {
     return this.client.delete(`/admin/events/${id}`);
   }
 
+  cancelAdminEvent(id: string) {
+    return this.client.post(`/admin/events/${id}/cancel`, {});
+  }
+
   // ---- EVENTS (Parent) ----
 
   listParentEvents(params?: { page?: number; pageSize?: number; dateFrom?: string }) {
@@ -248,7 +252,7 @@ class ApiClient {
     return this.client.patch(`/admin/users/${id}/email-notifications`, { emailNotificationsEnabled });
   }
 
-  updateUserProfile(id: string, data: { prenom?: string; nom?: string; telephone?: string; fonction?: string; specialite?: string }) {
+  updateUserProfile(id: string, data: { prenom?: string; nom?: string; telephone?: string; fonction?: string; specialite?: string; notesAdmin?: string }) {
     return this.client.patch(`/admin/users/${id}`, data);
   }
 
@@ -614,7 +618,9 @@ class ApiClient {
   }
 
   rejectAdminInscription(id: string, raison?: string) {
-    return this.client.patch(`/admin/inscriptions/${id}/reject`, { raison });
+    return this.client.patch(`/admin/inscriptions/${id}/reject`, {
+      raison: raison?.trim() || undefined,
+    });
   }
 
   updateAdminInscriptionStatus(
@@ -623,6 +629,14 @@ class ApiClient {
     notes?: string,
   ) {
     return this.client.patch(`/admin/inscriptions/${id}/status`, { statut, notes });
+  }
+
+  resendAdminInscriptionConfirmation(id: string) {
+    return this.client.post(`/admin/inscriptions/${id}/resend-confirmation`, {});
+  }
+
+  resendAdminInscriptionCredentials(id: string) {
+    return this.client.post(`/admin/inscriptions/${id}/resend-credentials`, {});
   }
 
   // Public Inscription (no auth required)

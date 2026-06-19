@@ -1,5 +1,5 @@
 /** Valeurs stockées côté API / affichées dans les selects « relation ». */
-import { isValidCin, isValidName } from "@/lib/form-validation"
+import { isValidCin, isValidName, isValidPhone } from "@/lib/form-validation"
 
 export const DELEGATION_RELATION_CODES = ["Mere", "Pere", "Proche", "Tuteur", "Autre"] as const
 export type DelegationRelationCode = (typeof DELEGATION_RELATION_CODES)[number]
@@ -18,7 +18,6 @@ export function normalizeDelegationRelation(raw: string | null | undefined): Del
 
 export const DELEGATION_PHONE_MIN_DIGITS = 8
 export const DELEGATION_PHONE_MAX_DIGITS = 15
-const DELEGATION_PHONE_RE = /^\+(?:[0-9][\s.-]?){8,15}$/
 
 export function countPhoneDigits(value: string): number {
   return value.replace(/\D/g, "").length
@@ -29,17 +28,15 @@ export type DelegationPhoneMessageKey =
   | "delegationPhoneRequiredInline"
   | "delegationPhoneTooShort"
   | "delegationPhoneTooLong"
-  | "delegationPhoneIntlRequired"
   | "delegationPhoneInvalid"
 
 export function delegationPhoneMessageKey(phone: string): DelegationPhoneMessageKey | null {
   const p = phone.trim()
   if (!p) return "delegationPhoneRequiredInline"
-  if (!p.startsWith("+")) return "delegationPhoneIntlRequired"
-  if (!DELEGATION_PHONE_RE.test(p)) return "delegationPhoneInvalid"
   const digits = countPhoneDigits(p)
   if (digits < DELEGATION_PHONE_MIN_DIGITS) return "delegationPhoneTooShort"
   if (digits > DELEGATION_PHONE_MAX_DIGITS) return "delegationPhoneTooLong"
+  if (!isValidPhone(p)) return "delegationPhoneInvalid"
   return null
 }
 

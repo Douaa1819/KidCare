@@ -27,6 +27,7 @@ import { PlatformModule } from './modules/platform/platform.module';
 import { RedisModule } from './common/redis/redis.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { SanitizeJsonBodyInterceptor } from './common/interceptors/sanitize-json-body.interceptor';
+import { DevRequestTimingInterceptor } from './common/interceptors/dev-request-timing.interceptor';
 
 @Module({
   imports: [
@@ -59,6 +60,10 @@ import { SanitizeJsonBodyInterceptor } from './common/interceptors/sanitize-json
     {
       provide: APP_INTERCEPTOR,
       useClass: SanitizeJsonBodyInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: DevRequestTimingInterceptor,
     },
   ],
 })

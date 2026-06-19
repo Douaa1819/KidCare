@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CalendarDays, ChevronLeft, ChevronRight, List, Plus, Trash2, Pencil } from "lucide-react";
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight, List, Plus, Pencil, Ban } from "lucide-react";
 import { SidebarNew } from "@/components/layout/sidebar-new"
 import { AdminMainContent } from "@/components/layout/sidebar-context";
 import { InlineAlert } from "@/components/ui/inline-alert";
@@ -18,6 +18,9 @@ import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
 import { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "next-intl";
 import { validateTimeRange } from "@/lib/form-validation";
+import { AdminListPagination } from "@/components/admin/admin-list-pagination";
+
+const EVENTS_PAGE_SIZE = 10;
 
 interface EventItem {
   id: string;
@@ -28,6 +31,7 @@ interface EventItem {
   classeId?: string | null;
   cost?: number | null;
   currency?: string | null;
+  status?: string;
 }
 
 interface ClasseItem {
@@ -51,14 +55,16 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
   const [saving, setSaving] = useState(false);
   const [showPast, setShowPast] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const [deletePending, setDeletePending] = useState(false);
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [cancelPending, setCancelPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  const [listPage, setListPage] = useState(1);
+  const [pastPage, setPastPage] = useState(1);
 
   const [formData, setFormData] = useState({
     titre: "",
@@ -142,6 +148,7 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
           classeId: ev.classeId ?? null,
           cost: typeof ev.cost === "number" ? ev.cost : typeof ev.cout === "number" ? ev.cout : null,
           currency: typeof ev.currency === "string" ? ev.currency : typeof ev.devise === "string" ? ev.devise : null,
+          status: typeof ev.status === "string" ? ev.status : "PUBLISHED",
         })),
       );
 
@@ -268,22 +275,22 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
     });
   };
 
-  const confirmDelete = async () => {
-    if (!deleteTargetId) return;
+  const confirmCancel = async () => {
+    if (!cancelTargetId) return;
     try {
-      setDeletePending(true);
+      setCancelPending(true);
       setError(null);
-      await apiClient.deleteAdminEvent(deleteTargetId);
-      notifySuccess(t("successDelete"));
-      setDeleteTargetId(null);
+      await apiClient.cancelAdminEvent(cancelTargetId);
+      notifySuccess(t("successCancel"));
+      setCancelTargetId(null);
       await loadData();
     } catch (err: unknown) {
-      console.error("[Admin/Events] Error deleting event", err);
-      const msg = getApiErrorMessage(err, t("deleteError"));
+      console.error("[Admin/Events] Error cancelling event", err);
+      const msg = getApiErrorMessage(err, t("cancelError"));
       setError(msg);
       notifyError(msg);
     } finally {
-      setDeletePending(false);
+      setCancelPending(false);
     }
   };
 
@@ -332,7 +339,7 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
                 }
                 setShowForm(true);
               }}
-              className="gap-2 bg-primary hover:bg-primary/90 flex-shrink-0"
+              className="gap-2 flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">
@@ -481,7 +488,7 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={saving}>
+                  <Button type="submit" disabled={saving}>
                     {saving ? t("saveCreating") : editingEventId ? t("update") : t("create")}
                   </Button>
                   <Button
@@ -508,6 +515,11 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
             const past = events
               .filter(ev => new Date(ev.endAt) < now)
               .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+
+            const futureTotalPages = Math.max(1, Math.ceil(future.length / EVENTS_PAGE_SIZE));
+            const pastTotalPages = Math.max(1, Math.ceil(past.length / EVENTS_PAGE_SIZE));
+            const pagedFuture = future.slice((listPage - 1) * EVENTS_PAGE_SIZE, listPage * EVENTS_PAGE_SIZE);
+            const pagedPast = past.slice((pastPage - 1) * EVENTS_PAGE_SIZE, pastPage * EVENTS_PAGE_SIZE);
 
             const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
             const gridStart = new Date(monthStart);
@@ -589,19 +601,26 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
               </Card>
             );
 
-            const EventCard = ({ ev, isPast }: { ev: EventItem; isPast: boolean }) => (
+            const EventCard = ({ ev, isPast }: { ev: EventItem; isPast: boolean }) => {
+              const isCancelled = ev.status === "CANCELLED";
+              return (
               <Card
                 key={ev.id}
-                className={`p-5 transition-colors ${isPast ? "opacity-60 border border-border bg-muted/30" : "border-2 border-secondary/30 hover:border-secondary/60 bg-gradient-to-r from-white to-secondary/5"}`}
+                className={`p-5 transition-colors ${isCancelled ? "opacity-70 border border-red-200 bg-red-50/30" : isPast ? "opacity-60 border border-border bg-muted/30" : "border-2 border-secondary/30 hover:border-secondary/60 bg-gradient-to-r from-white to-secondary/5"}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="text-base font-bold text-foreground">{ev.titre}</h3>
+                      <h3 className={`text-base font-bold ${isCancelled ? "line-through text-muted-foreground" : "text-foreground"}`}>{ev.titre}</h3>
                       <Badge className={isPast ? "bg-muted text-muted-foreground" : "bg-secondary text-secondary-foreground font-semibold"}>
                         {ev.classeId ? classes.find(c => c.id === ev.classeId)?.nom ?? t("scopeClass") : t("scopeGeneral")}
                       </Badge>
-                      {isPast && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{t("pastBadge")}</span>}
+                      {isCancelled && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 font-semibold">
+                          {t("cancelledBadge")}
+                        </span>
+                      )}
+                      {isPast && !isCancelled && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{t("pastBadge")}</span>}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {formatDateTime(ev.startAt)} → {formatDateTime(ev.endAt)}
@@ -626,26 +645,32 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1 hover:bg-muted"
-                      onClick={() => handleEdit(ev)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1 text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleteTargetId(ev.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {!isCancelled ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 hover:bg-muted"
+                          onClick={() => handleEdit(ev)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive-outline"
+                          className="gap-1"
+                          onClick={() => setCancelTargetId(ev.id)}
+                          title={t("cancelEvent")}
+                        >
+                          <Ban className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </Card>
             );
+            };
 
             return (
               <div className="space-y-6">
@@ -686,9 +711,18 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
                     </Card>
                   ) : (
                     <div className="grid gap-3">
-                      {future.map(ev => <EventCard key={ev.id} ev={ev} isPast={false} />)}
+                      {pagedFuture.map(ev => <EventCard key={ev.id} ev={ev} isPast={false} />)}
                     </div>
                   )}
+                  {future.length > 0 ? (
+                    <AdminListPagination
+                      page={listPage}
+                      totalPages={futureTotalPages}
+                      totalItems={future.length}
+                      pageSize={EVENTS_PAGE_SIZE}
+                      onPageChange={setListPage}
+                    />
+                  ) : null}
                 </div>
 
                 {/* Passés — collapsible */}
@@ -704,9 +738,18 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
                     </button>
                     {showPast && (
                       <div className="grid gap-3">
-                        {past.map(ev => <EventCard key={ev.id} ev={ev} isPast={true} />)}
+                        {pagedPast.map(ev => <EventCard key={ev.id} ev={ev} isPast={true} />)}
                       </div>
                     )}
+                    {showPast && past.length > 0 ? (
+                      <AdminListPagination
+                        page={pastPage}
+                        totalPages={pastTotalPages}
+                        totalItems={past.length}
+                        pageSize={EVENTS_PAGE_SIZE}
+                        onPageChange={setPastPage}
+                      />
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -716,16 +759,16 @@ export default function EventsPage({ params }: { params: Promise<{ locale: Local
       </AdminMainContent>
 
       <SimpleConfirmDialog
-        open={Boolean(deleteTargetId)}
-        title={t("deleteConfirm")}
-        confirmLabel={t("delete")}
+        open={Boolean(cancelTargetId)}
+        title={t("cancelConfirm")}
+        confirmLabel={t("cancelEvent")}
         cancelLabel={t("cancel")}
         variant="destructive"
-        pending={deletePending}
+        pending={cancelPending}
         onCancel={() => {
-          if (!deletePending) setDeleteTargetId(null);
+          if (!cancelPending) setCancelTargetId(null);
         }}
-        onConfirm={confirmDelete}
+        onConfirm={confirmCancel}
       />
     </div>
   );

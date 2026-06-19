@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -26,6 +26,7 @@ export class RejectInscriptionDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   raison?: string;
 }
 

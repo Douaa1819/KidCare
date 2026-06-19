@@ -23,6 +23,7 @@ import {
 } from "@/lib/form-validation";
 import { CHILD_ENROLLMENT_AGE_POLICY, formatAgeBound } from "@/lib/child-age-policy";
 import { FamilySearchSelect } from "@/components/admin/family-search-select";
+import { AdminListPagination } from "@/components/admin/admin-list-pagination";
 
 type EnseignantClasseItem = {
   enseignant: {
@@ -79,6 +80,68 @@ function resolveTodayPresence(presences: any[] | undefined, todayUtc: string): a
   return undefined;
 }
 
+function mapEnfantApiToItem(enfant: any, todayUtc: string): EnfantItem {
+  const fullName = `${enfant.prenom ?? ""} ${enfant.nom ?? ""}`.trim();
+  const group = enfant.classe?.nom ?? "—";
+  const tuteurs = enfant.famille?.tuteurs ?? [];
+  const principal = tuteurs.find((t: any) => t.principal) ?? tuteurs[0];
+  const parentName = principal
+    ? `${principal.prenom ?? ""} ${principal.nom ?? ""}`.trim() || principal.telephone || "—"
+    : "—";
+
+  let todayStatusCode: PresenceKey = undefined;
+  if (enfant.presences && Array.isArray(enfant.presences)) {
+    const todayPresence = resolveTodayPresence(enfant.presences, todayUtc);
+    if (todayPresence) {
+      if (todayPresence.statut === "Present") todayStatusCode = "Present";
+      else if (todayPresence.statut === "Absent") todayStatusCode = "Absent";
+      else if (todayPresence.statut === "Justifie") todayStatusCode = "Justifie";
+    }
+  }
+
+  return {
+    id: enfant.id,
+    prenom: enfant.prenom ?? "",
+    nom: enfant.nom ?? "",
+    name: fullName || "—",
+    group,
+    classId: enfant.classeId ?? enfant.classe?.id ?? undefined,
+    genre: enfant.genre ?? undefined,
+    remarques: enfant.remarques ?? undefined,
+    teacher: "—",
+    parent: parentName,
+    todayStatusCode,
+    presences:
+      enfant.presences
+        ?.map((presence: any) => {
+          try {
+            if (!presence.date) return null;
+            const dateObj = new Date(presence.date);
+            if (isNaN(dateObj.getTime())) return null;
+            return {
+              id: presence.id,
+              date: dateObj.toISOString().split("T")[0],
+              statut: presence.statut,
+            };
+          } catch (e) {
+            console.warn("Invalid date in presence:", presence.date, e);
+            return null;
+          }
+        })
+        .filter((p: any) => p !== null) || [],
+  };
+}
+
+function buildEditFormFromEnfant(enfant: any) {
+  return {
+    prenom: enfant.prenom ?? "",
+    nom: enfant.nom ?? "",
+    genre: enfant.genre ?? "",
+    classeId: enfant.classeId ?? enfant.classe?.id ?? "",
+    remarques: enfant.remarques ?? "",
+  };
+}
+
 export default function EnfantsPage({ params }: { params: Promise<{ locale: Locale }> }) {
   use(params);
   const currentLocale = useLocale() as Locale;
@@ -108,6 +171,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
   const [editTarget, setEditTarget] = useState<EnfantItem | null>(null);
   const [editForm, setEditForm] = useState({ prenom: "", nom: "", genre: "", classeId: "", remarques: "" });
   const [editSaving, setEditSaving] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<{ id: string; name: string } | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<{ id: string; name: string } | null>(null);
@@ -137,61 +201,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
         const res = await apiClient.listChildren(1, 50, showArchived);
         const items = res.data.items ?? res.data.data ?? [];
 
-        const mapped: EnfantItem[] = items.map((enfant: any) => {
-          const fullName = `${enfant.prenom} ${enfant.nom}`.trim();
-          const group = enfant.classe?.nom ?? "—";
-          const tuteurs = enfant.famille?.tuteurs ?? [];
-          const principal = tuteurs.find((t: any) => t.principal) ?? tuteurs[0];
-          const parentName = principal
-            ? `${principal.prenom ?? ""} ${principal.nom ?? ""}`.trim() || principal.telephone || "—"
-            : "—";
-
-          // Trouver la présence pour aujourd'hui
-          let todayStatusCode: PresenceKey = undefined;
-          
-          // Si l'enfant a des présences, chercher celle d'aujourd'hui
-          if (enfant.presences && Array.isArray(enfant.presences)) {
-            const todayPresence = resolveTodayPresence(enfant.presences, today);
-            if (todayPresence) {
-              if (todayPresence.statut === "Present") {
-                todayStatusCode = "Present";
-              } else if (todayPresence.statut === "Absent") {
-                todayStatusCode = "Absent";
-              } else if (todayPresence.statut === "Justifie") {
-                todayStatusCode = "Justifie";
-              }
-            }
-          }
-
-          return {
-            id: enfant.id,
-            prenom: enfant.prenom ?? "",
-            nom: enfant.nom ?? "",
-            name: fullName,
-            group,
-            classId: enfant.classe?.id,
-            genre: enfant.genre ?? undefined,
-            remarques: enfant.remarques ?? undefined,
-            teacher: "—",
-            parent: parentName,
-            todayStatusCode,
-            presences: enfant.presences?.map((presence: any) => {
-              try {
-                if (!presence.date) return null;
-                const dateObj = new Date(presence.date);
-                if (isNaN(dateObj.getTime())) return null;
-                return {
-                  id: presence.id,
-                  date: dateObj.toISOString().split('T')[0],
-                  statut: presence.statut
-                };
-              } catch (e) {
-                console.warn('Invalid date in presence:', presence.date, e);
-                return null;
-              }
-            }).filter((p: any) => p !== null) || []
-          } as EnfantItem;
-        });
+        const mapped: EnfantItem[] = items.map((enfant: any) => mapEnfantApiToItem(enfant, today));
 
         if (!cancelled) {
           setChildren(mapped);
@@ -358,51 +368,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
       // Après création/mise à jour, on recharge la liste
       const res = await apiClient.listChildren(1, 50);
       const items = res.data.items ?? res.data.data ?? [];
-      const mapped: EnfantItem[] = items.map((enfant: any) => {
-        const fullName = `${enfant.prenom} ${enfant.nom}`.trim();
-        const group = enfant.classe?.nom ?? "—";
-        const tuteurs = enfant.famille?.tuteurs ?? [];
-        const principal = tuteurs.find((t: any) => t.principal) ?? tuteurs[0];
-        const parentName = principal
-          ? `${principal.prenom ?? ""} ${principal.nom ?? ""}`.trim() || principal.telephone || "—"
-          : "—";
-
-        // Trouver la présence pour aujourd'hui
-        let todayStatusCode: PresenceKey = undefined;
-        
-        if (enfant.presences && Array.isArray(enfant.presences)) {
-          const todayPresence = resolveTodayPresence(enfant.presences, today);
-          if (todayPresence) {
-            if (todayPresence.statut === "Present") todayStatusCode = "Present";
-            else if (todayPresence.statut === "Absent") todayStatusCode = "Absent";
-            else if (todayPresence.statut === "Justifie") todayStatusCode = "Justifie";
-          }
-        }
-
-        return {
-          id: enfant.id,
-          name: fullName,
-          group,
-          teacher: "—",
-          parent: parentName,
-          todayStatusCode,
-          presences: enfant.presences?.map((presence: any) => {
-            try {
-              if (!presence.date) return null;
-              const dateObj = new Date(presence.date);
-              if (isNaN(dateObj.getTime())) return null;
-              return {
-                id: presence.id,
-                date: dateObj.toISOString().split('T')[0],
-                statut: presence.statut
-              };
-            } catch (e) {
-              console.warn('Invalid date in presence:', presence.date, e);
-              return null;
-            }
-          }).filter((p: any) => p !== null) || []
-        } as EnfantItem;
-      });
+      const mapped: EnfantItem[] = items.map((enfant: any) => mapEnfantApiToItem(enfant, today));
       setChildren(mapped);
 
       setFormData({ prenom: "", nom: "", familleId: "", classeId: "", dateNaissance: "" });
@@ -414,10 +380,25 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
   };
 
 
-  const handleEditOpen = (child: EnfantItem) => {
+  const handleEditOpen = async (child: EnfantItem) => {
     setEditTarget(child);
-    setEditForm({ prenom: child.prenom ?? "", nom: child.nom ?? "", genre: child.genre ?? "", classeId: child.classId ?? "", remarques: child.remarques ?? "" });
+    setEditForm(buildEditFormFromEnfant(child));
     setEditModalOpen(true);
+    setEditLoading(true);
+
+    try {
+      const res = await apiClient.getChild(child.id);
+      const enfant = res.data as any;
+      setEditForm(buildEditFormFromEnfant(enfant));
+      setEditTarget((prev) =>
+        prev?.id === child.id ? mapEnfantApiToItem(enfant, today) : prev,
+      );
+    } catch (err) {
+      console.error("[Admin/Enfants] Error loading child for edit", err);
+      notifyError(getApiErrorMessage(err, t("errors.loadChildren")));
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const handleEditSave = async () => {
@@ -434,9 +415,18 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
       setChildren((prev) =>
         prev.map((c) =>
           c.id === editTarget.id
-            ? { ...c, prenom: editForm.prenom, nom: editForm.nom, name: editForm.prenom + " " + editForm.nom, genre: editForm.genre, classeId: editForm.classeId, remarques: editForm.remarques, group: classes.find((cl) => cl.id === editForm.classeId)?.nom ?? c.group }
-            : c
-        )
+            ? {
+                ...c,
+                prenom: editForm.prenom,
+                nom: editForm.nom,
+                name: `${editForm.prenom} ${editForm.nom}`.trim(),
+                genre: editForm.genre,
+                classId: editForm.classeId || undefined,
+                remarques: editForm.remarques,
+                group: classes.find((cl) => cl.id === editForm.classeId)?.nom ?? c.group,
+              }
+            : c,
+        ),
       );
       setEditModalOpen(false);
       setEditTarget(null);
@@ -618,11 +608,11 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                           <Eye className="w-3 h-3" /> {t('view')}
                         </Link>
                         {showArchived ? (
-                          <Button size="icon" variant="outline" className="h-7 w-7 text-sky-700 hover:bg-sky-50" onClick={() => setRestoreTarget({ id: child.id, name: child.name })} aria-label={t("restoreChild")}>
+                          <Button size="icon" variant="info-outline" className="h-7 w-7" onClick={() => setRestoreTarget({ id: child.id, name: child.name })} aria-label={t("restoreChild")}>
                             <RotateCcw className="w-3 h-3" />
                           </Button>
                         ) : (
-                          <Button size="icon" variant="outline" className="h-7 w-7 text-amber-600 hover:bg-amber-50" onClick={() => setArchiveTarget({ id: child.id, name: child.name })} aria-label={t('archive')}>
+                          <Button size="icon" variant="warning-outline" className="h-7 w-7" onClick={() => setArchiveTarget({ id: child.id, name: child.name })} aria-label={t('archive')}>
                             <Archive className="w-3 h-3" />
                           </Button>
                         )}
@@ -646,7 +636,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                     )}
                     {child.todayStatusCode && (
                       <Badge className={
-                        child.todayStatusCode === "Present" ? "bg-green-100 text-green-700" :
+                        child.todayStatusCode === "Present" ? "pp-surface-success border" :
                         child.todayStatusCode === "Absent" ? "bg-red-100 text-red-700" :
                         child.todayStatusCode === "Justifie" ? "bg-blue-100 text-blue-700" :
                         "bg-gray-100 text-gray-700"
@@ -722,7 +712,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                             <Badge
                               className={
                                 child.todayStatusCode === "Present"
-                                  ? "bg-green-100 text-green-700"
+                                  ? "pp-surface-success border"
                                   : child.todayStatusCode === "Absent"
                                   ? "bg-red-100 text-red-700"
                                   : child.todayStatusCode === "Justifie"
@@ -769,8 +759,8 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                             {showArchived ? (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="gap-1 text-xs text-sky-700 border-sky-300 hover:bg-sky-50"
+                                variant="info-outline"
+                                className="gap-1 text-xs"
                                 onClick={() => setRestoreTarget({ id: child.id, name: child.name })}
                               >
                                 <RotateCcw className="w-3 h-3" />
@@ -779,8 +769,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                             ) : (
                               <Button
                                 size="icon"
-                                variant="outline"
-                                className="text-amber-600 hover:bg-amber-50"
+                                variant="warning-outline"
                                 onClick={() => setArchiveTarget({ id: child.id, name: child.name })}
                                 aria-label={t('archive')}
                               >
@@ -801,25 +790,15 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                 </table>
               </div>
             </div>
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground">
-                  {t('pagination', {
-                    from: (page - 1) * PAGE_SIZE + 1,
-                    to: Math.min(page * PAGE_SIZE, filtered.length),
-                    total: filtered.length,
-                  })}
-                </p>
-                <div className="flex gap-1">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 text-xs border rounded disabled:opacity-40 hover:bg-muted">←</button>
-                  {Array.from({length: totalPages}, (_, i) => i + 1).map(n => (
-                    <button key={n} onClick={() => setPage(n)} className={"px-3 py-1 text-xs border rounded " + (n === page ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>{n}</button>
-                  ))}
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 text-xs border rounded disabled:opacity-40 hover:bg-muted">→</button>
-                </div>
-              </div>
-            )}
+            {filtered.length > 0 ? (
+              <AdminListPagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+              />
+            ) : null}
           </Card>
         </div>
       </AdminMainContent>
@@ -949,20 +928,23 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
               </button>
             </div>
             <div className="space-y-4">
+              {editLoading ? (
+                <p className="text-sm text-muted-foreground">Chargement des informations…</p>
+              ) : null}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('form.firstName')}</label>
-                  <Input value={editForm.prenom} onChange={(e) => setEditForm((prev) => ({ ...prev, prenom: e.target.value }))} />
+                  <Input value={editForm.prenom} disabled={editLoading} onChange={(e) => setEditForm((prev) => ({ ...prev, prenom: e.target.value }))} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('form.lastName')}</label>
-                  <Input value={editForm.nom} onChange={(e) => setEditForm((prev) => ({ ...prev, nom: e.target.value }))} />
+                  <Input value={editForm.nom} disabled={editLoading} onChange={(e) => setEditForm((prev) => ({ ...prev, nom: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('form.gender')}</label>
-                  <select value={editForm.genre} onChange={(e) => setEditForm((prev) => ({ ...prev, genre: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                  <select value={editForm.genre} disabled={editLoading} onChange={(e) => setEditForm((prev) => ({ ...prev, genre: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
                     <option value="">{t('form.genderUnset')}</option>
                     <option value="M">{t('form.boy')}</option>
                     <option value="F">{t('form.girl')}</option>
@@ -970,7 +952,7 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('form.class')}</label>
-                  <select value={editForm.classeId} onChange={(e) => setEditForm((prev) => ({ ...prev, classeId: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
+                  <select value={editForm.classeId} disabled={editLoading} onChange={(e) => setEditForm((prev) => ({ ...prev, classeId: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm bg-background">
                     <option value="">{t('noClass')}</option>
                     {classes.map((cl) => (<option key={cl.id} value={cl.id}>{cl.nom}</option>))}
                   </select>
@@ -978,10 +960,10 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('form.remarks')}</label>
-                <textarea value={editForm.remarques} onChange={(e) => setEditForm((prev) => ({ ...prev, remarques: e.target.value }))} placeholder={t('form.remarksPh')} rows={3} className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
+                <textarea value={editForm.remarques} disabled={editLoading} onChange={(e) => setEditForm((prev) => ({ ...prev, remarques: e.target.value }))} placeholder={t('form.remarksPh')} rows={3} className="w-full border rounded-md px-3 py-2 text-sm bg-background resize-none" />
               </div>
               <div className="flex gap-3 pt-2">
-                <Button onClick={handleEditSave} disabled={editSaving} className="flex-1">
+                <Button onClick={handleEditSave} disabled={editSaving || editLoading} className="flex-1">
                   {editSaving ? t('saving') : t('save')}
                 </Button>
                 <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={editSaving}>{t('cancel')}</Button>
@@ -1033,8 +1015,8 @@ export default function EnfantsPage({ params }: { params: Promise<{ locale: Loca
             </p>
             <div className="flex gap-3 pt-1">
               <Button
-                variant="outline"
-                className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+                variant="warning"
+                className="flex-1"
                 onClick={handleArchiveConfirm}
               >
                 {t('archiveConfirm')}

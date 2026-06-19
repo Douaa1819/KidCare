@@ -109,7 +109,7 @@ export default function ReglementInterieurAdminPage({
           </div>
 
           {successMsg && (
-            <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md px-4 py-3">
+            <div className="pp-surface-success border text-sm rounded-md px-4 py-3">
               {successMsg}
             </div>
           )}

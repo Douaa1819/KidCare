@@ -53,7 +53,7 @@ export default function AdminProfilePage({ params }: { params: Promise<{ locale:
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">{t("profile.changePasswordTitle")}</h2>
             {error   && <p className="text-sm text-destructive mb-3 whitespace-pre-line">{error}</p>}
-            {success && <p className="text-sm text-emerald-600 mb-3">{success}</p>}
+            {success && <p className="text-sm pp-text-success mb-3">{success}</p>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">{t("profile.fields.oldPassword")}</label>

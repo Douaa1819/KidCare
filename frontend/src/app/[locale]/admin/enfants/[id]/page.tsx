@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -8,13 +8,15 @@ import { Locale } from "@/lib/i18n/config";
 import { apiClient } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { SidebarNew } from "@/components/layout/sidebar-new"
+import { MenaPhoneInput } from "@/components/ui/mena-phone-input";
+import { SidebarNew } from "@/components/layout/sidebar-new";
 import { AdminMainContent } from "@/components/layout/sidebar-context";
 import { SimpleConfirmDialog } from "@/components/ui/simple-confirm-dialog";
+import { EnfantProfileView } from "@/components/admin/enfant-profile-view";
 import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
-import { AlertTriangle, Baby, ClipboardList, FileText, HeartPulse, MapPin, MessageSquare, NotebookPen, Pencil, Users, UserRound, X, Plus, Trash2, Save, ChevronLeft } from "lucide-react";
+import { resolveChildPhoto } from "@/lib/admin/user-profile";
+import { Pencil, X, Plus, Trash2, Save, ChevronLeft, Users, BookOpen, UserCheck, Phone, IdCard } from "lucide-react";
 
 export default function EnfantDetailPage({
   params,
@@ -24,29 +26,27 @@ export default function EnfantDetailPage({
   const resolvedParams = use(params);
   const { locale, id } = resolvedParams;
   const t = useTranslations("admin.children");
+  const tp = useTranslations("admin.children.profile");
 
-  const [enfant, setEnfant]   = useState<any | null>(null);
+  const [enfant, setEnfant] = useState<any | null>(null);
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // ── Edit form state ───────────────────────────────────────────────────────
-  const [editing, setEditing]   = useState(false);
+  const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     prenom: "", nom: "", genre: "", classeId: "", photoUrl: "", remarques: "",
   });
-  const [saving, setSaving]     = useState(false);
-  const [editErr, setEditErr]   = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editErr, setEditErr] = useState<string | null>(null);
 
-  // ── Delegation form ───────────────────────────────────────────────────────
   const [showDelForm, setShowDelForm] = useState(false);
   const [delForm, setDelForm] = useState({ nom: "", telephone: "", cin: "", relation: "" });
-  const [delSaving, setDelSaving]     = useState(false);
-  const [delErr, setDelErr]           = useState<string | null>(null);
+  const [delSaving, setDelSaving] = useState(false);
+  const [delErr, setDelErr] = useState<string | null>(null);
   const [deleteDelegationId, setDeleteDelegationId] = useState<string | null>(null);
   const [deleteDelegationPending, setDeleteDelegationPending] = useState(false);
 
-  // ── Load data ─────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -61,24 +61,28 @@ export default function EnfantDetailPage({
           setClasses(Array.isArray(classesRes.data) ? classesRes.data : classesRes.data?.data ?? []);
         }
       } catch {
-        if (!cancelled) setError("Impossible de charger la fiche enfant.");
+        if (!cancelled) setError(tp("notFound"));
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     load();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, tp]);
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const openEdit = () => {
     if (!enfant) return;
+    const familleInscriptions = enfant.famille?.inscriptions;
     setEditForm({
-      prenom:    enfant.prenom   ?? "",
-      nom:       enfant.nom      ?? "",
-      genre:     enfant.genre    ?? "",
-      classeId:  enfant.classeId ?? "",
-      photoUrl:  enfant.photoUrl ?? "",
+      prenom: enfant.prenom ?? "",
+      nom: enfant.nom ?? "",
+      genre: enfant.genre ?? "",
+      classeId: enfant.classeId ?? enfant.classe?.id ?? "",
+      photoUrl:
+        resolveChildPhoto(
+          { photoUrl: enfant.photoUrl, inscriptions: enfant.inscriptions },
+          familleInscriptions,
+        ) ?? "",
       remarques: enfant.remarques ?? "",
     });
     setEditErr(null);
@@ -86,14 +90,15 @@ export default function EnfantDetailPage({
   };
 
   const saveEdit = async () => {
-    setSaving(true); setEditErr(null);
+    setSaving(true);
+    setEditErr(null);
     try {
       const res = await apiClient.updateChild(id, {
-        prenom:    editForm.prenom   || undefined,
-        nom:       editForm.nom      || undefined,
-        genre:     editForm.genre    || undefined,
-        classeId:  editForm.classeId || null,
-        photoUrl:  editForm.photoUrl || null,
+        prenom: editForm.prenom || undefined,
+        nom: editForm.nom || undefined,
+        genre: editForm.genre || undefined,
+        classeId: editForm.classeId || null,
+        photoUrl: editForm.photoUrl || null,
         remarques: editForm.remarques || null,
       });
       setEnfant((prev: any) => ({ ...prev, ...res.data }));
@@ -106,15 +111,19 @@ export default function EnfantDetailPage({
   };
 
   const addDelegation = async () => {
-    if (!delForm.nom.trim()) { setDelErr("Le nom est obligatoire."); return; }
-    setDelSaving(true); setDelErr(null);
+    if (!delForm.nom.trim()) {
+      setDelErr(tp("delegations.fullNameRequired"));
+      return;
+    }
+    setDelSaving(true);
+    setDelErr(null);
     try {
       const res = await apiClient.addDelegation(id, delForm);
       setEnfant((prev: any) => ({ ...prev, delegations: [...(prev.delegations ?? []), res.data] }));
       setDelForm({ nom: "", telephone: "", cin: "", relation: "" });
       setShowDelForm(false);
     } catch {
-      setDelErr("Erreur lors de l'ajout.");
+      setDelErr(tp("delegations.saveError"));
     } finally {
       setDelSaving(false);
     }
@@ -129,7 +138,7 @@ export default function EnfantDetailPage({
         ...prev,
         delegations: prev.delegations.filter((d: any) => d.id !== deleteDelegationId),
       }));
-      notifySuccess("Personne autorisée supprimée.");
+      notifySuccess(tp("delegations.deleteSuccess"));
       setDeleteDelegationId(null);
     } catch (err) {
       notifyError(getApiErrorMessage(err, "Erreur lors de la suppression."));
@@ -138,422 +147,189 @@ export default function EnfantDetailPage({
     }
   };
 
-  // ── Loading / error states ────────────────────────────────────────────────
-  if (loading) return (
+  if (loading) {
+    return (
     <div className="min-h-screen bg-gray-50 flex">
       <SidebarNew currentLocale={locale} />
       <AdminMainContent className="flex items-center justify-center pt-16 md:pt-0">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Chargement de la fiche enfant…</p>
+            <p className="text-sm text-muted-foreground">{tp("loading")}</p>
         </div>
       </AdminMainContent>
     </div>
   );
+  }
 
-  if (error || !enfant) return (
+  if (error || !enfant) {
+    return (
     <div className="min-h-screen bg-gray-50 flex">
       <SidebarNew currentLocale={locale} />
       <AdminMainContent className="flex items-center justify-center pt-16 md:pt-0 p-4">
-        <p className="text-destructive text-sm text-center">{error ?? "Fiche enfant introuvable."}</p>
+          <p className="text-destructive text-sm text-center">{error ?? tp("notFound")}</p>
       </AdminMainContent>
     </div>
   );
+  }
 
-  const fullName    = `${enfant.prenom} ${enfant.nom}`.trim();
-  const group       = enfant.classe?.nom ?? "—";
-  const niveau      = enfant.classe?.niveau ?? null;
-  const tuteurs     = enfant.famille?.tuteurs ?? [];
-  const birthdate   = enfant.dateNaissance ? new Date(enfant.dateNaissance) : null;
-  const profilSante = enfant.profilSante ?? null;
-  const allergies: any[]   = Array.isArray(profilSante?.allergies)   ? profilSante.allergies   : [];
-  const intolerances: any[]= Array.isArray(profilSante?.intolerances) ? profilSante.intolerances : [];
-  const tags: string[]     = Array.isArray(profilSante?.tags)         ? profilSante.tags         : [];
+  const fullName = `${enfant.prenom ?? ""} ${enfant.nom ?? ""}`.trim();
+  const group = enfant.classe?.nom ?? "—";
   const delegations: any[] = Array.isArray(enfant.delegations) ? enfant.delegations : [];
-  const inscription  = Array.isArray(enfant.inscriptions) && enfant.inscriptions.length > 0 ? enfant.inscriptions[0] : null;
-  const payload      = inscription?.payload ?? null;
-  const santePayload = payload?.sante ?? null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
       <SidebarNew currentLocale={locale} />
 
       <AdminMainContent className="pt-16 md:pt-0">
-
-        {/* ── Mobile-friendly top bar ───────────────────────────────────── */}
-        <div className="sticky top-16 md:top-0 z-30 bg-white border-b border-border px-4 py-3 flex items-center gap-3">
+        <div className="sticky top-16 md:top-0 z-30 bg-white/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 shadow-sm">
           <button
+            type="button"
             onClick={() => history.back()}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
+            aria-label={t("backToList")}
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">{t("backToList")}</span>
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base sm:text-lg font-bold text-foreground truncate">{fullName}</h1>
-            <p className="text-xs text-muted-foreground truncate">
-              {group}{niveau ? ` · ${niveau}` : ""}
+            <p className="text-xs font-semibold text-slate-800 truncate flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 shrink-0 text-slate-600" aria-hidden />
+              {group}
             </p>
           </div>
-          <Button size="sm" onClick={openEdit} className="flex items-center gap-1.5 flex-shrink-0">
+          <Button size="sm" onClick={openEdit} className="flex items-center gap-1.5 flex-shrink-0 rounded-xl">
             <Pencil className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Modifier</span>
+            <span className="hidden sm:inline">{t("edit")}</span>
           </Button>
         </div>
 
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+          <EnfantProfileView enfant={enfant} classes={classes} locale={locale} />
 
-          {/* ── Hero card ──────────────────────────────────────────────── */}
-          <Card className="p-4 sm:p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-border bg-muted flex items-center justify-center flex-shrink-0">
-                {enfant.photoUrl
-                  ? <img src={enfant.photoUrl} alt={fullName} className="w-full h-full object-cover" />
-                  : <Baby className="h-9 w-9 text-sky-700" aria-hidden />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xl font-bold text-foreground break-words">{fullName}</h2>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <span className="text-sm text-muted-foreground">{group}</span>
-                  {niveau && <Badge variant="outline" className="text-xs">{niveau}</Badge>}
-                  {enfant.genre && <Badge variant="outline" className="text-xs">{enfant.genre === "M" ? "Masculin" : enfant.genre === "F" ? "Féminin" : enfant.genre}</Badge>}
-                </div>
-                {birthdate && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Né(e) le {birthdate.toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" })}
-                  </p>
-                )}
-              </div>
-            </div>
-            {enfant.remarques && (
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 mb-1">
-                  <NotebookPen className="h-3.5 w-3.5" aria-hidden /> Remarques admin
-                </p>
-                <p className="text-sm text-amber-900">{enfant.remarques}</p>
-              </div>
-            )}
-            {payload?.commentaire && (
-              <div className="mt-3 p-3 bg-muted/40 border border-border rounded-xl">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1">
-                  <MessageSquare className="h-3.5 w-3.5" aria-hidden /> Commentaire (inscription)
-                </p>
-                <p className="text-sm text-foreground">{payload.commentaire}</p>
-              </div>
-            )}
-          </Card>
-
-          {/* ── Fiche santé ────────────────────────────────────────────── */}
-          <Card className="p-4 sm:p-5 space-y-4">
-            <h2 className="flex items-center gap-2 text-base font-semibold">
-              <HeartPulse className="h-4 w-4 text-sky-700" aria-hidden /> Fiche santé
-            </h2>
-
-            {/* Mesures */}
-            {(santePayload?.taille || santePayload?.poids) && (
-              <div className="flex flex-wrap gap-3">
-                {santePayload.taille && (
-                  <div className="flex-1 min-w-[100px] rounded-xl p-3 bg-blue-50 border border-blue-200 text-center">
-                    <p className="text-xs text-blue-600 font-medium">Taille</p>
-                    <p className="text-lg font-bold text-blue-800">{santePayload.taille} cm</p>
-                  </div>
-                )}
-                {santePayload.poids && (
-                  <div className="flex-1 min-w-[100px] rounded-xl p-3 bg-green-50 border border-green-200 text-center">
-                    <p className="text-xs text-green-600 font-medium">Poids</p>
-                    <p className="text-lg font-bold text-green-800">{santePayload.poids} kg</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Allergies */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Allergies</p>
-              {allergies.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {allergies.map((a: any, i: number) => (
-                    <span key={i} className="px-2.5 py-1 text-xs rounded-full bg-red-50 text-red-700 border border-red-200">
-                      {typeof a === "string" ? a : a.nom}{a.severite ? ` (${a.severite})` : ""}
-                    </span>
-                  ))}
-                </div>
-              ) : <p className="text-sm text-muted-foreground">Aucune allergie.</p>}
-            </div>
-
-            {/* Intolérances */}
-            {intolerances.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Intolérances</p>
-                <div className="flex flex-wrap gap-2">
-                  {intolerances.map((i: any) => (
-                    <span key={i.id ?? i.nom} className="px-2.5 py-1 text-xs rounded-full bg-orange-50 text-orange-700 border border-orange-200">{i.nom}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tags santé */}
-            {(tags.length > 0 || (santePayload?.tags ?? []).length > 0) && (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Tags santé</p>
-                <div className="flex flex-wrap gap-2">
-                  {(tags.length > 0 ? tags : santePayload?.tags ?? []).map((tag: string) => (
-                    <span key={tag} className="px-2.5 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200">{tag}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Restriction alimentaire */}
-            {santePayload?.restrictionAlimentaire && santePayload.restrictionAlimentaire !== "sans_restriction" && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-yellow-700 mb-0.5">
-                  <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> Restriction alimentaire
-                </p>
-                <p className="text-sm text-yellow-900">
-                  {{
-                    sans_porc: "Sans porc",
-                    vegetarien: "Végétarien",
-                    sans_gluten: "Sans gluten",
-                    autre: santePayload.restrictionDetails || "Autre",
-                  }[santePayload.restrictionAlimentaire as string] ?? santePayload.restrictionAlimentaire}
-                </p>
-              </div>
-            )}
-
-            {/* Profil santé DB */}
-            {profilSante && (
-              <div className="space-y-1 text-sm border-t border-border pt-3">
-                {profilSante.medecin && <InfoRow label="Médecin" value={profilSante.medecin} />}
-                {profilSante.notes   && <InfoRow label="Notes médicales" value={profilSante.notes} />}
-              </div>
-            )}
-
-            {!profilSante && allergies.length === 0 && intolerances.length === 0 && tags.length === 0 && !santePayload && (
-              <p className="text-sm text-muted-foreground">Aucune information de santé.</p>
-            )}
-          </Card>
-
-          {/* ── Personnes autorisées ────────────────────────────────────── */}
-          <Card className="p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="flex items-center gap-2 text-base font-semibold">
-                <Users className="h-4 w-4 text-sky-700" aria-hidden /> Personnes autorisées
+          {/* Delegation management (admin CRUD) */}
+          <Card className="overflow-hidden border border-border/80 bg-white shadow-sm rounded-2xl">
+            <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3.5 border-b border-border/60 bg-muted/20">
+              <h2 className="flex items-center gap-3 text-sm font-semibold text-foreground">
+                <span className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-200 flex items-center justify-center shrink-0">
+                  <UserCheck className="h-4 w-4 text-violet-700" aria-hidden />
+                </span>
+                {tp("delegations.title")}
               </h2>
-              <Button size="sm" onClick={() => { setShowDelForm(true); setDelErr(null); }} className="flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Ajouter
+              <Button size="sm" onClick={() => { setShowDelForm(true); setDelErr(null); }} className="flex items-center gap-1.5 rounded-xl">
+                <Plus className="w-3.5 h-3.5" /> {tp("delegations.add")}
               </Button>
             </div>
 
+            <div className="p-4 sm:p-5">
+
             {showDelForm && (
               <div className="mb-4 p-4 border border-border rounded-xl bg-muted/20 space-y-3">
-                <p className="text-sm font-semibold">Nouvelle personne autorisée</p>
+                <p className="text-sm font-semibold">{tp("delegations.addTitle")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Nom complet *</label>
-                    <Input value={delForm.nom} onChange={e => setDelForm(p => ({ ...p, nom: e.target.value }))} placeholder="Prénom Nom" />
+                    <label className="text-xs text-muted-foreground mb-1 block">{tp("delegations.fullName")} *</label>
+                    <Input value={delForm.nom} onChange={(e) => setDelForm((p) => ({ ...p, nom: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Téléphone</label>
-                    <Input value={delForm.telephone} onChange={e => setDelForm(p => ({ ...p, telephone: e.target.value }))} placeholder="+212 6..." />
+                    <label className="text-xs text-muted-foreground mb-1 block">{tp("fields.phone")}</label>
+                    <MenaPhoneInput value={delForm.telephone} onChange={(telephone) => setDelForm((p) => ({ ...p, telephone }))} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">CIN</label>
-                    <Input value={delForm.cin} onChange={e => setDelForm(p => ({ ...p, cin: e.target.value }))} placeholder="AB123456" />
+                    <label className="text-xs text-muted-foreground mb-1 block">{tp("fields.cin")}</label>
+                    <Input value={delForm.cin} onChange={(e) => setDelForm((p) => ({ ...p, cin: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Relation</label>
-                    <Input value={delForm.relation} onChange={e => setDelForm(p => ({ ...p, relation: e.target.value }))} placeholder="Grand-mère, Oncle…" />
+                    <label className="text-xs text-muted-foreground mb-1 block">{tp("fields.relationship")}</label>
+                    <Input value={delForm.relation} onChange={(e) => setDelForm((p) => ({ ...p, relation: e.target.value }))} />
                   </div>
                 </div>
                 {delErr && <p className="text-xs text-destructive">{delErr}</p>}
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={addDelegation} disabled={delSaving}>{delSaving ? "…" : "Ajouter"}</Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowDelForm(false)}>Annuler</Button>
+                  <Button size="sm" onClick={addDelegation} disabled={delSaving}>{delSaving ? "…" : tp("delegations.add")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowDelForm(false)}>{t("cancel")}</Button>
                 </div>
               </div>
             )}
 
-            {delegations.length === 0 && !showDelForm ? (
-              <p className="text-sm text-muted-foreground">Aucune personne autorisée enregistrée.</p>
+            {delegations.length === 0 ? (
+              <p className="text-sm text-muted-foreground/70 italic">{tp("emptyValue")}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {delegations.map((d: any) => (
-                  <div key={d.id} className="p-3 rounded-xl border border-border bg-white flex justify-between items-start gap-2">
-                    <div className="text-sm min-w-0">
+                  <div key={d.id} className="p-3.5 rounded-xl border border-border/80 bg-muted/10 flex justify-between items-start gap-2">
+                    <div className="text-sm min-w-0 space-y-1">
                       <p className="font-semibold text-foreground break-words">{d.nom}</p>
-                      {d.relation  && <p className="text-xs text-muted-foreground">Lien : {d.relation}</p>}
-                      {d.telephone && <p className="text-xs text-muted-foreground">Tél : {d.telephone}</p>}
-                      {d.cin       && <p className="text-xs text-muted-foreground">CIN : {d.cin}</p>}
+                      {d.relation && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Users className="w-3 h-3 shrink-0" aria-hidden />
+                          {d.relation}
+                        </p>
+                      )}
+                      {d.telephone && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Phone className="w-3 h-3 shrink-0" aria-hidden />
+                          {d.telephone}
+                        </p>
+                      )}
+                      {d.cin && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <IdCard className="w-3 h-3 shrink-0" aria-hidden />
+                          {d.cin}
+                        </p>
+                      )}
                     </div>
-                    <button onClick={() => setDeleteDelegationId(d.id)} className="text-red-400 hover:text-red-600 flex-shrink-0">
+                    <button type="button" onClick={() => setDeleteDelegationId(d.id)} className="text-red-400 hover:text-red-600 flex-shrink-0 p-1 rounded-lg hover:bg-red-50">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-
-            {/* Personnes from inscription payload (fallback) */}
-            {payload?.restrictions?.personnesAutorisees?.length > 0 && delegations.length === 0 && (
-              <div className="mt-3 pt-3 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-2">Depuis le formulaire d'inscription :</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                  {payload.restrictions.personnesAutorisees.map((p: any, i: number) => (
-                    <div key={i} className="p-3 rounded-lg border border-border bg-muted/20">
-                      <p className="font-medium break-words">{p.name || "—"}</p>
-                      {p.relationship && <p className="text-xs text-muted-foreground">Lien : {p.relationship}</p>}
-                      {p.phone && <p className="text-xs text-muted-foreground">Tél : {p.phone}</p>}
-                      {p.cin   && <p className="text-xs text-muted-foreground">CIN : {p.cin}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            </div>
           </Card>
-
-          {/* ── Parents / tuteurs ───────────────────────────────────────── */}
-          <Card className="p-4 sm:p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
-              <UserRound className="h-4 w-4 text-sky-700" aria-hidden /> Parents / tuteurs
-            </h2>
-
-            {/* Payload tuteurs (avec CIN) priorité sur les DB tuteurs */}
-            {Array.isArray(payload?.tuteurs) && payload.tuteurs.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {payload.tuteurs.map((tut: any, i: number) => (
-                  <div key={i} className="p-3 rounded-xl border border-border bg-white space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm break-words">{`${tut.prenom ?? ""} ${tut.nom ?? ""}`.trim() || "—"}</span>
-                      <div className="flex gap-1 flex-shrink-0">
-                        {tut.principal && <Badge className="bg-emerald-100 text-emerald-700 text-[11px]">Principal</Badge>}
-                        {tut.lien && <Badge variant="outline" className="text-[11px]">{tut.lien}</Badge>}
-                      </div>
-                    </div>
-                    {tut.cin       && <p className="text-xs text-muted-foreground">CIN : <span className="font-medium text-foreground">{tut.cin}</span></p>}
-                    {tut.telephone && <p className="text-xs text-muted-foreground">Tél : {tut.telephone}</p>}
-                    {tut.email     && <p className="text-xs text-muted-foreground break-all">Email : {tut.email}</p>}
-                  </div>
-                ))}
-              </div>
-            ) : tuteurs.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {tuteurs.map((tut: any) => (
-                  <div key={tut.id} className="p-3 rounded-xl border border-border bg-white space-y-1">
-                    <div className="flex items-center justify-between mb-1 gap-2">
-                      <span className="font-medium text-sm break-words">{`${tut.prenom ?? ""} ${tut.nom ?? ""}`.trim() || tut.telephone || "—"}</span>
-                      {tut.principal && <Badge className="bg-emerald-100 text-emerald-700 text-[11px] flex-shrink-0">Principal</Badge>}
-                    </div>
-                    {tut.lien      && <p className="text-xs text-muted-foreground">Lien : {tut.lien}</p>}
-                    {tut.cin       && <p className="text-xs text-muted-foreground">CIN : <span className="font-medium text-foreground">{tut.cin}</span></p>}
-                    {tut.telephone && <p className="text-xs text-muted-foreground">Tél : {tut.telephone}</p>}
-                    {tut.email     && <p className="text-xs text-muted-foreground break-all">Email : {tut.email}</p>}
-                  </div>
-                ))}
-              </div>
-            ) : <p className="text-sm text-muted-foreground">Aucun tuteur.</p>}
-
-            {/* Infos famille (adresse + situation familiale) */}
-            {(payload?.famille?.adresseFacturation || payload?.famille?.situationFamiliale) && (
-              <div className="mt-3 pt-3 border-t border-border space-y-1">
-                {payload?.famille?.situationFamiliale && (
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" aria-hidden /> Situation familiale : <span className="font-medium text-foreground">{payload.famille.situationFamiliale}</span>
-                  </p>
-                )}
-                {payload?.famille?.adresseFacturation && (
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" aria-hidden /> Adresse : <span className="text-foreground">{payload.famille.adresseFacturation}</span>
-                  </p>
-                )}
-              </div>
-            )}
-          </Card>
-
-          {/* ── Dossier inscription ─────────────────────────────────────── */}
-          {inscription && (
-            <Card className="p-4 sm:p-5 space-y-3">
-              <h2 className="flex items-center gap-2 text-base font-semibold">
-                <FileText className="h-4 w-4 text-sky-700" aria-hidden /> Dossier d&apos;inscription
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                <InfoRow label="Statut" value={inscription.statut} />
-                <InfoRow label="Date" value={new Date(inscription.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" })} />
-                {payload?.famille?.emailPrincipal && <InfoRow label="Email famille" value={payload.famille.emailPrincipal} />}
-                {payload?.famille?.languePreferee && <InfoRow label="Langue" value={payload.famille.languePreferee === "fr" ? "Français" : "Arabe"} />}
-              </div>
-
-              {/* Restrictions / personnes autorisées depuis le formulaire */}
-              {payload?.restrictions && (
-                <div className="pt-2 border-t border-border">
-                  {payload.restrictions.sansRestriction ? (
-                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <ClipboardList className="h-3.5 w-3.5" aria-hidden /> Toutes personnes autorisées à récupérer l&apos;enfant (sans restriction).
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Personnes autorisées (formulaire)</p>
-                      {Array.isArray(payload.restrictions.personnesAutorisees) && payload.restrictions.personnesAutorisees.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {payload.restrictions.personnesAutorisees.map((p: { name?: string; relationship?: string; cin?: string; phone?: string }, i: number) => (
-                            <div key={i} className="text-xs p-2.5 rounded-lg border border-border bg-muted/20">
-                              <p className="font-medium">{p.name || "—"}</p>
-                              {p.relationship && <p className="text-muted-foreground">Lien : {p.relationship}</p>}
-                              {p.cin          && <p className="text-muted-foreground">CIN : {p.cin}</p>}
-                              {p.phone        && <p className="text-muted-foreground">Tél : {p.phone}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Aucune personne autorisée renseignée.</p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </Card>
-          )}
-
         </div>
       </AdminMainContent>
 
-      {/* ── Edit modal ─────────────────────────────────────────────────────── */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b bg-muted/30">
               <div>
-                <h2 className="font-bold text-base">Modifier la fiche enfant</h2>
-                <p className="text-xs text-muted-foreground">{fullName}</p>
+                <h2 className="font-bold text-base">{t("editTitle", { name: fullName })}</h2>
               </div>
-              <button onClick={() => setEditing(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
+              <button type="button" onClick={() => setEditing(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
             </div>
             <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Prénom</label>
-                  <Input value={editForm.prenom} onChange={e => setEditForm(p => ({ ...p, prenom: e.target.value }))} />
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t("form.firstName")}</label>
+                  <Input value={editForm.prenom} onChange={(e) => setEditForm((p) => ({ ...p, prenom: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nom</label>
-                  <Input value={editForm.nom} onChange={e => setEditForm(p => ({ ...p, nom: e.target.value }))} />
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t("form.lastName")}</label>
+                  <Input value={editForm.nom} onChange={(e) => setEditForm((p) => ({ ...p, nom: e.target.value }))} />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Genre</label>
-                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
-                  value={editForm.genre} onChange={e => setEditForm(p => ({ ...p, genre: e.target.value }))}>
-                  <option value="">— Non précisé —</option>
-                  <option value="M">Masculin</option>
-                  <option value="F">Féminin</option>
+                <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t("form.gender")}</label>
+                <select
+                  className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+                  value={editForm.genre}
+                  onChange={(e) => setEditForm((p) => ({ ...p, genre: e.target.value }))}
+                >
+                  <option value="">{t("form.genderUnset")}</option>
+                  <option value="M">{t("form.boy")}</option>
+                  <option value="F">{t("form.girl")}</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Classe assignée</label>
-                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
-                  value={editForm.classeId} onChange={e => setEditForm(p => ({ ...p, classeId: e.target.value }))}>
-                  <option value="">— Aucune classe —</option>
+                <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t("form.class")}</label>
+                <select
+                  className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+                  value={editForm.classeId}
+                  onChange={(e) => setEditForm((p) => ({ ...p, classeId: e.target.value }))}
+                >
+                  <option value="">{t("noClass")}</option>
                   {classes.map((c: any) => (
                     <option key={c.id} value={c.id}>{c.nom}{c.niveau ? ` (${c.niveau})` : ""}</option>
                   ))}
@@ -572,7 +348,7 @@ export default function EnfantDetailPage({
                       return;
                     }
                     const reader = new FileReader();
-                    reader.onload = () => setEditForm(p => ({ ...p, photoUrl: reader.result as string }));
+                    reader.onload = () => setEditForm((p) => ({ ...p, photoUrl: reader.result as string }));
                     reader.readAsDataURL(file);
                   }}
                   className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary/10 file:text-primary cursor-pointer"
@@ -580,25 +356,25 @@ export default function EnfantDetailPage({
                 {editForm.photoUrl && (
                   <div className="mt-2 flex items-center gap-2">
                     <img src={editForm.photoUrl} alt="preview" className="w-14 h-14 rounded-xl object-cover border" />
-                    <button type="button" onClick={() => setEditForm(p => ({ ...p, photoUrl: "" }))} className="text-xs text-destructive hover:underline">Supprimer</button>
+                    <button type="button" onClick={() => setEditForm((p) => ({ ...p, photoUrl: "" }))} className="text-xs text-destructive hover:underline">Supprimer</button>
                   </div>
                 )}
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Remarques admin</label>
+                <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t("form.remarks")}</label>
                 <textarea
                   className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background min-h-[80px] resize-none focus:outline-none focus:ring-1 focus:ring-primary"
                   value={editForm.remarques}
-                  onChange={e => setEditForm(p => ({ ...p, remarques: e.target.value }))}
-                  placeholder="Notes internes…"
+                  onChange={(e) => setEditForm((p) => ({ ...p, remarques: e.target.value }))}
+                  placeholder={t("form.remarksPh")}
                 />
               </div>
               {editErr && <p className="text-xs text-destructive bg-destructive/10 rounded px-3 py-2">{editErr}</p>}
             </div>
             <div className="flex justify-end gap-3 px-5 py-4 border-t bg-muted/20">
-              <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>Annuler</Button>
+              <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>{t("cancel")}</Button>
               <Button onClick={saveEdit} disabled={saving} className="flex items-center gap-1.5">
-                <Save className="w-4 h-4" />{saving ? "Enregistrement…" : "Enregistrer"}
+                <Save className="w-4 h-4" />{saving ? t("saving") : t("save")}
               </Button>
             </div>
           </div>
@@ -607,9 +383,9 @@ export default function EnfantDetailPage({
 
       <SimpleConfirmDialog
         open={Boolean(deleteDelegationId)}
-        title="Supprimer cette personne autorisée ?"
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
+        title={tp("delegations.deleteTitle")}
+        confirmLabel={t("archiveConfirm")}
+        cancelLabel={t("cancel")}
         variant="destructive"
         pending={deleteDelegationPending}
         onCancel={() => {
@@ -620,13 +396,3 @@ export default function EnfantDetailPage({
     </div>
   );
 }
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <p className="text-sm">
-      <span className="text-muted-foreground">{label} : </span>
-      <span className="font-medium break-all">{value}</span>
-    </p>
-  );
-}
-

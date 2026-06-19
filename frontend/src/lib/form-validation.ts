@@ -8,12 +8,12 @@ import {
   isValidIsoDateString,
   type ChildAgePolicy,
 } from "@/lib/child-age-policy"
+import { isValidMenaPhone, normalizePhoneDigits } from "@/lib/mena-phone"
 
 export { CHILD_ENROLLMENT_AGE_POLICY, ISO_DATE_RE, isValidIsoDateString }
 
 const NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0600-\u06FF' -]+$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
-const MOROCCAN_PHONE_RE = /^(0[5-7]\d{8}|\+212[5-7]\d{8}|00212[5-7]\d{8})$/
 const CIN_RE = /^[A-Za-z]{1,2}[0-9]{4,8}$/
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -38,11 +38,11 @@ export function isValidEmail(value: string): boolean {
 }
 
 export function normalizePhone(value: string): string {
-  return value.replace(/[\s.-]/g, "")
+  return normalizePhoneDigits(value)
 }
 
 export function isValidPhone(value: string): boolean {
-  return MOROCCAN_PHONE_RE.test(normalizePhone(value))
+  return isValidMenaPhone(value)
 }
 
 export function isValidCin(value: string): boolean {

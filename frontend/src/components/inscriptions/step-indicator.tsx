@@ -16,10 +16,10 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
                 isCompleted
-                  ? "bg-secondary text-secondary-foreground"
+                  ? "bg-[var(--status-accepted-bg)] text-[var(--status-accepted-text)] ring-2 ring-[var(--status-accepted-border)]"
                   : isCurrent
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-[var(--status-progress-bg)] text-[var(--status-progress-text)] shadow-md ring-2 ring-[var(--status-progress-border)]"
+                    : "bg-white/80 text-muted-foreground ring-1 ring-border"
               }`}
             >
               {isCompleted ? (
@@ -34,7 +34,13 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
                 step
               )}
             </div>
-            {step < totalSteps && <div className={`w-12 h-1 ${isCompleted ? "bg-secondary" : "bg-border"}`} />}
+            {step < totalSteps && (
+              <div
+                className={`w-8 sm:w-12 h-1 rounded-full ${
+                  isCompleted ? "bg-[var(--status-accepted-border)]" : "bg-border"
+                }`}
+              />
+            )}
           </div>
         )
       })}

@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import { Input } from "@/components/ui/input";
+import { MenaPhoneInput } from "@/components/ui/mena-phone-input";
 
 import { apiClient } from "@/lib/api";
 
@@ -671,16 +672,11 @@ export default function EtablissementPage({ params }: { params: Promise<{ locale
 
                     <label className="block text-xs font-medium text-foreground mb-1">{t("phone")}</label>
 
-                    <Input
-
+                    <MenaPhoneInput
                       value={form.telephone}
-
-                      onChange={e => setForm(f => ({ ...f, telephone: normalizePhone(e.target.value) }))}
-
-                      placeholder={t("placeholderPhone")}
-
-                      className={formErrors.telephone ? "border-red-400 focus-visible:ring-red-300" : ""}
-
+                      onChange={(telephone) => setForm(f => ({ ...f, telephone }))}
+                      aria-invalid={!!formErrors.telephone}
+                      inputClassName={formErrors.telephone ? "border-red-400 focus-visible:ring-red-300" : ""}
                     />
 
                     {formErrors.telephone && <p className="mt-1 text-xs text-red-500">{formErrors.telephone}</p>}

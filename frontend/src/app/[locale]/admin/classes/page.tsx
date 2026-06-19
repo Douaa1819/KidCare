@@ -19,11 +19,14 @@ import {
   parseTrancheAgeToPolicy,
 } from "@/lib/class-age";
 import { ChildAgeIntervalFields } from "@/components/child-age-interval-fields";
+import { AdminListPagination } from "@/components/admin/admin-list-pagination";
 import {
   getDefaultChildAgePolicy,
   validateChildAgePolicy,
   type ChildAgePolicy,
 } from "@/lib/child-age-policy";
+
+const CLASSES_PAGE_SIZE = 6;
 
 interface EnseignantInClasse {
   enseignant: {
@@ -81,6 +84,7 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
   const [deleteClassId, setDeleteClassId] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [unassignTarget, setUnassignTarget] = useState<{ classeId: string; enseignantId: string } | null>(null);
+  const [page, setPage] = useState(1);
   const [unassignPending, setUnassignPending] = useState(false);
 
   useEffect(() => {
@@ -231,6 +235,9 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
     return teachers.filter((teacher) => !assignedUserIds.has(teacher.id));
   };
 
+  const totalPages = Math.max(1, Math.ceil(classes.length / CLASSES_PAGE_SIZE));
+  const pagedClasses = classes.slice((page - 1) * CLASSES_PAGE_SIZE, page * CLASSES_PAGE_SIZE);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex">
@@ -259,7 +266,7 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
             </div>
             <Button
               onClick={() => setShowForm(!showForm)}
-              className="gap-2 bg-primary hover:bg-primary/90 flex-shrink-0"
+              className="gap-2 flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">{tc("addClass")}</span>
@@ -348,7 +355,7 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
                   <label htmlFor="active" className="text-sm font-medium">{tc("activeLabel")}</label>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <Button type="submit" className="bg-primary hover:bg-primary/90">
+                  <Button type="submit">
                     {editingId ? tc("submitUpdate") : tc("submitCreate")}
                   </Button>
                   <Button
@@ -373,7 +380,7 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
                 <p className="text-muted-foreground">{tc("emptyState")}</p>
               </Card>
             ) : (
-              classes.map((classe) => {
+              pagedClasses.map((classe) => {
                 const assignedTeachers = classe.enseignants ?? [];
                 const availableTeachers = getAvailableTeachers(classe);
                 const isAssigning = assigningClassId === classe.id;
@@ -397,7 +404,7 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
                         <Button size="sm" variant="outline" className="gap-1" onClick={() => handleEdit(classe)}>
                           <Edit2 className="w-4 h-4" /><span className="hidden sm:inline">{tc("modify")}</span>
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => setDeleteClassId(classe.id)}>
+                        <Button size="sm" variant="destructive-outline" className="gap-1" onClick={() => setDeleteClassId(classe.id)}>
                           <Trash2 className="w-4 h-4" /><span className="hidden sm:inline">{tc("remove")}</span>
                         </Button>
                       </div>
@@ -543,6 +550,16 @@ export default function ClassesPage({ params }: { params: Promise<{ locale: Loca
               })
             )}
           </div>
+
+          {classes.length > 0 ? (
+            <AdminListPagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={classes.length}
+              pageSize={CLASSES_PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          ) : null}
         </div>
       </AdminMainContent>
 

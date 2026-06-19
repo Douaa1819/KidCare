@@ -235,7 +235,8 @@ export function ParentArchiveDialog({
             {t("cancel")}
           </Button>
           <Button
-            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+            variant="warning"
+            className="flex-1"
             disabled={pending || loading}
             onClick={() => void handleConfirm()}
           >

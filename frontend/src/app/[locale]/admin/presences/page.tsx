@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api"
 import type { Locale } from "@/lib/i18n/config"
 import { useTranslations } from "next-intl"
 import { ChevronLeft, ChevronRight, ClipboardList, FileText, Filter, X } from "lucide-react"
+import { presenceBadgeVariant } from "@/lib/design/status-badges"
 import { formatLocalDateKey } from "@/lib/date-local"
 
 type PresenceRow = {
@@ -169,8 +170,7 @@ export default function AdminPresencesPage({
     w.document.close(); w.focus(); w.print(); w.close()
   }
 
-  const badgeVariant = (s: PresenceRow["statut"]) =>
-    s === "Present" ? "bg-emerald-100 text-emerald-700" : s === "Absent" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+  const presenceBadge = (s: PresenceRow["statut"]) => presenceBadgeVariant(s)
 
   const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 
@@ -268,9 +268,9 @@ export default function AdminPresencesPage({
           {/* ── Stats ──────────────────────────────────────────────────────── */}
           {total > 0 && (
             <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl p-3 text-center bg-emerald-50 border border-emerald-200">
-                <p className="text-xl font-bold text-emerald-700">{nbPresent}</p>
-                <p className="text-xs text-emerald-600">{t("presentCount")}</p>
+              <div className="rounded-xl p-3 text-center pp-surface-success border">
+                <p className="text-xl font-bold pp-text-success">{nbPresent}</p>
+                <p className="text-xs pp-text-success">{t("presentCount")}</p>
               </div>
               <div className="rounded-xl p-3 text-center bg-red-50 border border-red-200">
                 <p className="text-xl font-bold text-red-600">{nbAbsent}</p>
@@ -337,7 +337,7 @@ export default function AdminPresencesPage({
                           <td className="py-3 px-4 font-medium">{enfant || "—"}</td>
                           <td className="py-3 px-4 text-muted-foreground">{row.enfant?.classe?.nom ?? "—"}</td>
                           <td className="py-3 px-4">
-                            <Badge className={badgeVariant(row.statut)}>{rowStatutLabel(row.statut)}</Badge>
+                            <Badge variant={presenceBadge(row.statut)}>{rowStatutLabel(row.statut)}</Badge>
                           </td>
                           <td className="py-3 px-4 text-muted-foreground">{row.arriveeA ?? "—"}</td>
                           <td className="py-3 px-4 text-muted-foreground">{teacher}</td>
@@ -359,7 +359,7 @@ export default function AdminPresencesPage({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-sm">{enfant}</p>
-                          <Badge className={`text-[11px] ${badgeVariant(row.statut)}`}>{rowStatutLabel(row.statut)}</Badge>
+                          <Badge variant={presenceBadge(row.statut)} className="text-[11px]">{rowStatutLabel(row.statut)}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {dateLabel}

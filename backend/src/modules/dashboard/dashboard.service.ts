@@ -255,6 +255,7 @@ export class DashboardService {
       where: {
         startAt: { gte: fromDate },
         endAt: { lte: toDate },
+        status: 'PUBLISHED',
       },
       orderBy: { startAt: 'asc' },
     });

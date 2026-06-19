@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ROLE_BADGE_VARIANT } from "@/lib/design/status-badges";
 
 const RESOURCES = ["users", "children", "classes", "events", "menus", "photos", "reports", "settings", "admins"] as const;
 const FLAGS = ["view", "create", "edit", "delete", "upload", "export", "archive"] as const;
@@ -16,13 +17,6 @@ type Props = {
   editableRoles?: string[];
   visibleRoles?: readonly string[];
   onToggle?: (role: string, resource: string, flag: string, value: boolean) => void;
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  SUPER_ADMIN: "bg-purple-100 text-purple-800 border-purple-200",
-  ADMIN: "bg-red-100 text-red-800 border-red-200",
-  ENSEIGNANT: "bg-blue-100 text-blue-800 border-blue-200",
-  PARENT: "bg-green-100 text-green-800 border-green-200",
 };
 
 export function PermissionMatrix({
@@ -50,7 +44,7 @@ export function PermissionMatrix({
       {rolesToShow.map((role) => (
         <Card key={role} className="p-4 overflow-x-auto border-gray-200/80 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <Badge variant="outline" className={ROLE_COLORS[role]}>{roleLabel(role)}</Badge>
+            <Badge variant={ROLE_BADGE_VARIANT[role] ?? "neutral"}>{roleLabel(role)}</Badge>
             {role === "SUPER_ADMIN" && (
               <span className="text-xs text-gray-400">{t("readOnlyRole")}</span>
             )}
@@ -84,7 +78,7 @@ export function PermissionMatrix({
                             aria-label={`${roleLabel(role)} — ${t(resource)} — ${t(flag)}`}
                           />
                         ) : (
-                          <span className={checked ? "text-emerald-600 font-medium" : "text-gray-300"}>
+                          <span className={checked ? "pp-text-success font-medium" : "text-gray-300"}>
                             {checked ? t("yes") : "—"}
                           </span>
                         )}

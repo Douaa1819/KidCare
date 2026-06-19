@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { apiClient } from "@/lib/api";
+import { MenaPhoneInput } from "@/components/ui/mena-phone-input";
+import { ROLE_BADGE_VARIANT } from "@/lib/design/status-badges";
 import { fetchSession } from "@/lib/auth-session";
 import { normalizeAppRole } from "@/lib/auth/jwt-edge";
 import { canAdminManageUserRole } from "@/lib/auth/role-hierarchy";
@@ -18,8 +19,10 @@ import { useTranslations } from "next-intl";
 import { roleLabel } from "@/lib/i18n/labels";
 import { SimpleConfirmDialog } from "@/components/ui/simple-confirm-dialog";
 import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
+import { apiClient } from "@/lib/api";
 import { AlertTriangle, Archive, Crown } from "lucide-react";
 import { ParentArchiveDialog } from "@/components/admin/parent-archive-dialog";
+import { AdminListPagination } from "@/components/admin/admin-list-pagination";
 
 type UserItem = {
   id: string;
@@ -256,10 +259,9 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
 
                 <div>
                   <label className="block text-sm font-medium mb-1">{t("phoneOptional")}</label>
-                  <Input
-                    name="telephone"
+                  <MenaPhoneInput
                     value={createForm.telephone}
-                    onChange={handleCreateChange}
+                    onChange={(telephone) => setCreateForm((p) => ({ ...p, telephone }))}
                   />
                 </div>
 
@@ -325,12 +327,6 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
                 {/* Mobile card list */}
                 <div className="md:hidden space-y-3">
                   {paginatedUsers.map((u) => {
-                    const roleColors: Record<string, string> = {
-                      SUPER_ADMIN: "bg-purple-50 text-purple-700 border-purple-200",
-                      ADMIN: "bg-red-50 text-red-700 border-red-200",
-                      ENSEIGNANT: "bg-blue-50 text-blue-700 border-blue-200",
-                      PARENT: "bg-green-50 text-green-700 border-green-200",
-                    };
                     const manageable = canManageUser(u.role);
                     return (
                       <div key={u.id} className="rounded-lg border bg-white p-4">
@@ -339,9 +335,9 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
                             <p className="font-semibold text-foreground">{u.prenom} {u.nom}</p>
                             <p className="text-xs text-muted-foreground break-all">{u.email}</p>
                           </div>
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border flex-shrink-0 ${roleColors[u.role] ?? "bg-gray-50 text-gray-700 border-gray-200"}`}>
+                          <Badge variant={ROLE_BADGE_VARIANT[u.role] ?? "neutral"} className="flex-shrink-0">
                             {roleLabel(u.role, tr)}
-                          </span>
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {manageable ? (
@@ -363,12 +359,12 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
                             </Link>
                           )}
                           {manageable && (u.role === "PARENT" ? (
-                            <Button variant="outline" size="sm" className="text-xs h-7 text-amber-700 border-amber-300 hover:bg-amber-50" onClick={() => setArchiveTarget(u)}>
+                            <Button variant="warning-outline" size="sm" className="text-xs h-7" onClick={() => setArchiveTarget(u)}>
                               <Archive className="h-3.5 w-3.5 mr-1" aria-hidden />
                               {t("archive")}
                             </Button>
                           ) : (
-                            <Button variant="outline" size="sm" className="text-xs h-7 text-red-600 border-red-500 hover:bg-red-50" onClick={() => setDeleteTargetId(u.id)}>
+                            <Button variant="destructive-outline" size="sm" className="text-xs h-7" onClick={() => setDeleteTargetId(u.id)}>
                               {t("delete")}
                             </Button>
                           ))}
@@ -428,15 +424,14 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
                             {manageable ? (
                               <div className="flex gap-2">
                                 <Link href={withLocalePath(currentLocale, `/admin/utilisateurs/${u.id}`)}>
-                                  <Button variant="outline" size="sm" className="hover:bg-muted hover:text-foreground">
+                                  <Button variant="outline" size="sm">
                                     {t("viewProfile")}
                                   </Button>
                                 </Link>
                                 {u.role === "PARENT" ? (
                                   <Button
-                                    variant="outline"
+                                    variant="warning-outline"
                                     size="sm"
-                                    className="text-amber-700 border-amber-300 hover:bg-amber-50"
                                     onClick={() => setArchiveTarget(u)}
                                   >
                                     <Archive className="h-3.5 w-3.5 mr-1" aria-hidden />
@@ -444,9 +439,8 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
                                   </Button>
                                 ) : (
                                   <Button
-                                    variant="outline"
+                                    variant="destructive-outline"
                                     size="sm"
-                                    className="text-red-600 border-red-500 hover:bg-red-50"
                                     onClick={() => setDeleteTargetId(u.id)}
                                   >
                                     {t("delete")}
@@ -465,25 +459,15 @@ export default function UtilisateursPage({ params }: { params: Promise<{ locale:
                 </div>
               </>
             )}
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground">
-                  {t("paginationRange", {
-                    from: (page - 1) * PAGE_SIZE + 1,
-                    to: Math.min(page * PAGE_SIZE, filteredUsers.length),
-                    total: filteredUsers.length,
-                  })}
-                </p>
-                <div className="flex gap-1">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1 text-xs border rounded disabled:opacity-40 hover:bg-muted">←</button>
-                  {Array.from({length: totalPages}, (_, i) => i + 1).map(n => (
-                    <button key={n} onClick={() => setPage(n)} className={"px-3 py-1 text-xs border rounded " + (n === page ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>{n}</button>
-                  ))}
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1 text-xs border rounded disabled:opacity-40 hover:bg-muted">→</button>
-                </div>
-              </div>
-            )}
+            {filteredUsers.length > 0 ? (
+              <AdminListPagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={filteredUsers.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+              />
+            ) : null}
           </Card>
         </div>
       </AdminMainContent>

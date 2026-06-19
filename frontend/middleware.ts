@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import createIntlMiddleware from "next-intl/middleware";
+import { defaultLocale, locales } from "./src/lib/i18n/config";
 import {
   ACCESS_COOKIE,
   LEGACY_ACCESS_COOKIES,
@@ -12,7 +14,6 @@ import {
 } from "@/lib/auth/jwt-edge";
 
 const LOCALES = new Set(["fr", "ar"]);
-/** Chemin interne réécrit par le middleware pour afficher la page 404 stylée. */
 const NOT_FOUND_REWRITE_PATH = "__not-found__";
 const DASHBOARD_SEGMENTS = new Set(["admin", "teacher", "parent"]);
 const PUBLIC_LOCALE_SECTIONS = new Set([
@@ -20,6 +21,12 @@ const PUBLIC_LOCALE_SECTIONS = new Set([
   "mot-de-passe-oublie",
   "reinitialiser-mot-de-passe",
 ]);
+
+const handleI18nRouting = createIntlMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: "always",
+});
 
 function readAccessToken(req: NextRequest): string | undefined {
   return (
@@ -40,7 +47,11 @@ function isLoginHome(pathname: string, segments: string[]): boolean {
 }
 
 function isAuthLegacyPath(pathname: string): boolean {
-  return pathname === "/auth/login" || pathname === "/auth/login-user" || pathname.startsWith("/auth/");
+  return (
+    pathname === "/auth/login" ||
+    pathname === "/auth/login-user" ||
+    pathname.startsWith("/auth/")
+  );
 }
 
 function preferredLocale(req: NextRequest): string {
@@ -48,7 +59,6 @@ function preferredLocale(req: NextRequest): string {
   return cookie && LOCALES.has(cookie) ? cookie : "fr";
 }
 
-/** URL sans préfixe fr/ar valide (ex. /parent, /en, /foo/bar) → page 404 PetitsPas. */
 function rewriteToStyledNotFound(req: NextRequest): NextResponse {
   const loc = preferredLocale(req);
   const url = req.nextUrl.clone();
@@ -56,16 +66,35 @@ function rewriteToStyledNotFound(req: NextRequest): NextResponse {
   return NextResponse.rewrite(url, { status: 404 });
 }
 
+function isStaticOrPwaAsset(pathname: string): boolean {
+  return (
+    pathname === "/manifest.json" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/sw.js" ||
+    pathname.startsWith("/workbox-") ||
+    pathname.startsWith("/icons/") ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml|woff2?)$/i.test(pathname)
+  );
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const segments = pathname.split("/").filter(Boolean);
 
-  if (pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/") || isStaticOrPwaAsset(pathname)) {
     return NextResponse.next();
+  }
+
+  if (pathname === "/") {
+    return handleI18nRouting(req);
   }
 
   const firstSegment = segments[0];
   if (firstSegment && !LOCALES.has(firstSegment) && !isAuthLegacyPath(pathname)) {
+    const isPublicSection = PUBLIC_LOCALE_SECTIONS.has(firstSegment);
+    if (isPublicSection) {
+      return handleI18nRouting(req);
+    }
     return rewriteToStyledNotFound(req);
   }
 
@@ -80,7 +109,8 @@ export function middleware(req: NextRequest) {
   if (isAuthLegacyPath(pathname)) {
     if (isAuthenticated) {
       const loc =
-        req.cookies.get("NEXT_LOCALE")?.value && LOCALES.has(req.cookies.get("NEXT_LOCALE")!.value)
+        req.cookies.get("NEXT_LOCALE")?.value &&
+        LOCALES.has(req.cookies.get("NEXT_LOCALE")!.value)
           ? req.cookies.get("NEXT_LOCALE")!.value
           : "fr";
       return withNoStore(
@@ -100,7 +130,7 @@ export function middleware(req: NextRequest) {
   }
 
   if (hasLocale && section && PUBLIC_LOCALE_SECTIONS.has(section)) {
-    return NextResponse.next();
+    return handleI18nRouting(req);
   }
 
   if (hasLocale && section && DASHBOARD_SEGMENTS.has(section)) {
@@ -121,7 +151,7 @@ export function middleware(req: NextRequest) {
     return withNoStore(NextResponse.next());
   }
 
-  return NextResponse.next();
+  return handleI18nRouting(req);
 }
 
 export const config = {

@@ -301,6 +301,7 @@ export class UsersService {
         role: true,
         statut: true,
         emailNotificationsEnabled: true,
+        notesAdmin: true,
         dernierAcces: true,
         creeLe: true,
         modifieLe: true,
@@ -322,19 +323,32 @@ export class UsersService {
                 languePreferee: true,
                 adresseFacturation: true,
                 enfants: {
+                  where: { archivedAt: null },
                   select: {
                     id: true,
                     prenom: true,
                     nom: true,
                     dateNaissance: true,
                     genre: true,
+                    photoUrl: true,
+                    intolerances: true,
+                    sansRestriction: true,
+                    remarques: true,
                     profilSante: {
                       select: {
+                        tags: true,
                         allergies: {
                           select: {
                             id: true,
                             nom: true,
                             severite: true,
+                            notes: true,
+                          },
+                        },
+                        intolerances: {
+                          select: {
+                            id: true,
+                            nom: true,
                             notes: true,
                           },
                         },
@@ -345,6 +359,35 @@ export class UsersService {
                       select: {
                         id: true,
                         nom: true,
+                        niveau: true,
+                        enseignants: {
+                          where: { dateFin: null },
+                          select: {
+                            enseignant: {
+                              select: {
+                                id: true,
+                                utilisateur: {
+                                  select: {
+                                    id: true,
+                                    prenom: true,
+                                    nom: true,
+                                    email: true,
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    inscriptions: {
+                      orderBy: { createdAt: 'desc' as const },
+                      take: 1,
+                      select: {
+                        id: true,
+                        statut: true,
+                        payload: true,
+                        createdAt: true,
                       },
                     },
                   },
@@ -359,6 +402,25 @@ export class UsersService {
                     adresse: true,
                     email: true,
                     principal: true,
+                    utilisateur: {
+                      select: {
+                        id: true,
+                        telephone: true,
+                        email: true,
+                        statut: true,
+                      },
+                    },
+                  },
+                },
+                inscriptions: {
+                  orderBy: { createdAt: 'desc' as const },
+                  take: 10,
+                  select: {
+                    id: true,
+                    enfantId: true,
+                    statut: true,
+                    payload: true,
+                    createdAt: true,
                   },
                 },
               },
@@ -820,6 +882,7 @@ export class UsersService {
     if (dto.prenom !== undefined) userUpdateData.prenom = dto.prenom;
     if (dto.nom !== undefined) userUpdateData.nom = dto.nom;
     if (dto.telephone !== undefined) userUpdateData.telephone = dto.telephone;
+    if (dto.notesAdmin !== undefined) userUpdateData.notesAdmin = dto.notesAdmin || null;
 
     if (Object.keys(userUpdateData).length > 0) {
       await this.prisma.utilisateur.update({

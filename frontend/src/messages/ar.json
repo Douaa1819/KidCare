@@ -94,7 +94,7 @@
       "profileSaved": "تم تحديث المعلومات.",
       "profileLoadError": "تعذر تحميل معلوماتك.",
       "profileSaveError": "تعذر حفظ معلوماتك.",
-      "phoneInvalid": "رقم الهاتف غير صالح — الصيغة المغربية متوقعة (مثال: 0612345678)."
+      "phoneInvalid": "رقم الهاتف غير صالح."
     },
     "dashboard": {
       "title": "لوحة تحكم ولي الأمر",
@@ -283,7 +283,7 @@
       "authorizedTitle": "الأشخاص المصرح لهم",
       "authorizedSectionSubtitle": "الأشخاص المصرح لهم باستلام الطفل أو الاتصال بهم عند الحاجة.",
       "authorizedAddCta": "إضافة شخص",
-      "delegationPhoneHint": "يُفضّل الصيغة الدولية (مثال: +212 6 12 34 56 78).",
+      "delegationPhoneHint": "اختر بلد MENA ثم أدخل الرقم المحلي.",
       "add": "إضافة",
       "noAuthorized": "لا يوجد أشخاص مصرح لهم.",
       "newAuthorized": "شخص مصرح له جديد",
@@ -381,6 +381,7 @@
     "inscription": "تسجيل",
     "invalidLogin": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
     "forgotPasswordLink": "نسيت كلمة المرور؟",
+    "forgotPasswordLinkClass": "text-xs font-semibold text-[#FF6F61] hover:text-[#e45f54] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
     "emailLabel": "البريد الإلكتروني",
     "passwordLabel": "كلمة المرور",
     "emailPlaceholder": "exemple@thepetitspas.com",
@@ -389,6 +390,7 @@
     "submitting": "جاري الاتصال…",
     "notRegistered": "لم تسجّل بعد؟",
     "inscriptionLink": "الوصول إلى نموذج التسجيل",
+    "inscriptionLinkClass": "font-semibold text-accent hover:text-accent/80 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
     "errors": {
       "invalidEmail": "بريد إلكتروني غير صالح.",
       "fixEmail": "يرجى تصحيح البريد الإلكتروني.",
@@ -507,6 +509,124 @@
       "restoreChildSuccess": "تمت استعادة الطفل.",
       "archiveChildSuccess": "تمت أرشفة الطفل.",
       "readOnly": "للقراءة فقط",
+      "profile": {
+        "emptyValue": "غير مذكور",
+        "loading": "جاري تحميل ملف الطفل…",
+        "notFound": "ملف الطفل غير موجود.",
+        "sections": {
+          "identity": "معلومات الطفل",
+          "health": "الصحة والتغذية",
+          "parents": "الوالدان / الأوصياء",
+          "emergency": "جهات الاتصال للطوارئ",
+          "authorized": "الأشخاص المخولون",
+          "documents": "المستندات",
+          "registration": "ملف التسجيل",
+          "consents": "التصريحات والموافقات",
+          "adminRemarks": "ملاحظات الإدارة",
+          "parentRemarks": "ملاحظات ولي الأمر"
+        },
+        "groups": {
+          "schooling": "التمدرس",
+          "civilStatus": "الحالة المدنية",
+          "residence": "عنوان السكن",
+          "siblings": "الإخوة",
+          "familyInfo": "معلومات العائلة",
+          "healthAlerts": "تنبيهات صحية",
+          "medicalFile": "الملف الطبي"
+        },
+        "fields": {
+          "fullName": "الاسم الكامل",
+          "dateOfBirth": "تاريخ الميلاد",
+          "age": "العمر",
+          "gender": "الجنس",
+          "birthCity": "مدينة الميلاد",
+          "nationality": "الجنسية",
+          "currentAddress": "العنوان الحالي",
+          "currentCity": "المدينة الحالية",
+          "class": "الصف المعيّن",
+          "classLevel": "المستوى",
+          "desiredClass": "الصف المطلوب",
+          "siblingCount": "عدد الإخوة",
+          "siblingRank": "الترتيب في العائلة",
+          "height": "الطول",
+          "weight": "الوزن",
+          "familyHistory": "التاريخ العائلي",
+          "surgicalInterventions": "التدخلات الجراحية",
+          "doctor": "الطبيب المعالج",
+          "medicalNotes": "ملاحظات طبية",
+          "dietaryNotes": "تفاصيل غذائية",
+          "dietaryRestriction": "قيود غذائية",
+          "familyEmail": "البريد الرئيسي",
+          "familyLanguage": "اللغة المفضلة",
+          "familySituation": "الوضع العائلي",
+          "billingAddress": "عنوان الفوترة",
+          "registrationStatus": "حالة التسجيل",
+          "registrationDate": "تاريخ الطلب",
+          "declarationHonneur": "تصريح بالشرف",
+          "confirmationExacte": "تأكيد المعلومات",
+          "archivedAt": "مؤرشف في",
+          "cin": "بطاقة التعريف",
+          "phone": "الهاتف",
+          "email": "البريد الإلكتروني",
+          "address": "العنوان",
+          "profession": "المهنة",
+          "relationship": "صلة القرابة"
+        },
+        "roles": {
+          "mother": "الأم",
+          "father": "الأب",
+          "guardian": "وصي / قريب"
+        },
+        "badges": {
+          "principal": "المسؤول الرئيسي",
+          "archivedChild": "طفل مؤرشف",
+          "archivedAccount": "حساب مؤرشف"
+        },
+        "gender": { "M": "ذكر", "F": "أنثى" },
+        "language": { "fr": "الفرنسية", "ar": "العربية" },
+        "inscriptionStatus": {
+          "CANDIDATURE": "طلب",
+          "EN_COURS": "قيد المعالجة",
+          "ACTIF": "نشط",
+          "REJETEE": "مرفوض"
+        },
+        "accountStatus": {
+          "INVITED": "مدعو",
+          "ACTIVE": "نشط",
+          "DISABLED": "معطل",
+          "ARCHIVED": "مؤرشف"
+        },
+        "restrictions": {
+          "sans_restriction": "بدون قيود",
+          "sans_porc": "بدون لحم الخنزير",
+          "vegetarien": "نباتي",
+          "sans_gluten": "بدون غلوتين",
+          "autre": "أخرى"
+        },
+        "consent": { "yes": "نعم", "no": "لا" },
+        "tags": {
+          "diseases": "الأمراض / الحالات",
+          "allergies": "الحساسية",
+          "intolerances": "عدم التحمل"
+        },
+        "authorized": {
+          "noRestriction": "يمكن لأي شخص بالغ استلام الطفل (بدون قيود)."
+        },
+        "documents": {
+          "childPhoto": "صورة الطفل",
+          "photoHint": "صورة مرفقة عند التسجيل."
+        },
+        "delegations": {
+          "title": "إدارة الأشخاص المخولين",
+          "add": "إضافة",
+          "addTitle": "شخص مخول جديد",
+          "fullName": "الاسم الكامل",
+          "fullNameRequired": "الاسم إلزامي.",
+          "saveError": "خطأ أثناء الإضافة.",
+          "deleteTitle": "حذف هذا الشخص المخول؟",
+          "deleteSuccess": "تم حذف الشخص المخول."
+        }
+      },
       "saving": "جاري الحفظ…",
       "familySearch": {
         "placeholder": "البحث عن عائلة بالبريد…",
@@ -562,6 +682,18 @@
       "loading": "جاري تحميل التسجيلات…",
       "empty": "لا توجد تسجيلات.",
       "rejectPrompt": "سبب الرفض (اختياري):",
+      "rejectDialog": {
+        "title": "رفض التسجيل",
+        "description": "سيتلقى ولي الأمر رسالة بريد إلكتروني. إذا أدخلت سبباً، سيُدرج في الرسالة.",
+        "reasonLabel": "سبب الرفض (اختياري)",
+        "reasonPlaceholder": "مثال: اكتظاظ في هذه الفئة العمرية…",
+        "confirm": "تأكيد الرفض",
+        "cancel": "إلغاء",
+        "emailWithReason": "تم رفض التسجيل. تم إبلاغ ولي الأمر بالبريد (مع السبب).",
+        "emailWithoutReason": "تم رفض التسجيل. تم إبلاغ ولي الأمر بالبريد.",
+        "emailFailed": "تم رفض التسجيل. تعذر إرسال البريد إلى ولي الأمر."
+      },
+      "rejectReasonTitle": "سبب الرفض",
       "errors": {
         "load": "تعذر تحميل التسجيلات.",
         "accept": "خطأ أثناء قبول التسجيل.",
@@ -1020,12 +1152,17 @@
       "createError": "خطأ أثناء إنشاء الفعالية.",
       "deleteConfirm": "حذف هذه الفعالية؟",
       "deleteError": "خطأ أثناء الحذف.",
+      "cancelConfirm": "إلغاء هذه الفعالية؟ سيتلقى أولياء الأمور في الفصل إشعاراً بالبريد الإلكتروني.",
+      "cancelEvent": "إلغاء الفعالية",
+      "cancelError": "خطأ أثناء إلغاء الفعالية.",
+      "cancelledBadge": "ملغاة",
       "costFreeHint": "اتركه فارغاً أو أدخل 0 لفعالية مجانية.",
       "costInvalid": "يجب أن تكون التكلفة رقماً صالحاً.",
       "costNegative": "لا يمكن أن تكون التكلفة سالبة.",
       "successCreate": "تم إنشاء الفعالية.",
       "successUpdate": "تم تحديث الفعالية.",
       "successDelete": "تم حذف الفعالية.",
+      "successCancel": "تم إلغاء الفعالية. تم إشعار أولياء الأمور بالبريد الإلكتروني.",
       "formEdit": "تعديل فعالية",
       "viewCalendar": "التقويم",
       "viewList": "القائمة",

@@ -8,6 +8,7 @@ import {
   ValidateNested,
   IsISO8601,
   IsObject,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -108,6 +109,11 @@ export class TuteurDto {
   @IsOptional()
   @IsString()
   adresse?: string;
+
+  @ApiPropertyOptional({ description: 'Profession du tuteur' })
+  @IsOptional()
+  @IsString()
+  profession?: string;
 }
 
 /**
@@ -166,6 +172,62 @@ export class EnfantDto {
   @IsOptional()
   @IsString()
   rankInFraternity?: string;
+
+  @ApiPropertyOptional({
+    description: "Pays de nationalité de l'enfant (code pays)",
+    example: 'MA',
+  })
+  @IsOptional()
+  @IsString()
+  nationalitePays?: string;
+
+  @ApiPropertyOptional({
+    description: "Ville de nationalité de l'enfant",
+    example: 'Casablanca',
+  })
+  @IsOptional()
+  @IsString()
+  nationaliteVille?: string;
+
+  @ApiPropertyOptional({
+    description: "Pays de naissance de l'enfant (code pays)",
+    example: 'MA',
+  })
+  @IsOptional()
+  @IsString()
+  paysNaissance?: string;
+
+  @ApiPropertyOptional({
+    description: "Ville de naissance de l'enfant",
+    example: 'Casablanca',
+  })
+  @IsOptional()
+  @IsString()
+  villeNaissance?: string;
+
+  @ApiPropertyOptional({
+    description: "Adresse actuelle de l'enfant",
+    example: '12 rue Atlas',
+  })
+  @IsOptional()
+  @IsString()
+  adresseActuelle?: string;
+
+  @ApiPropertyOptional({
+    description: "Pays de résidence actuelle (code pays)",
+    example: 'MA',
+  })
+  @IsOptional()
+  @IsString()
+  paysActuel?: string;
+
+  @ApiPropertyOptional({
+    description: "Ville actuelle de l'enfant",
+    example: 'Marrakech',
+  })
+  @IsOptional()
+  @IsString()
+  villeActuelle?: string;
 }
 
 /**
@@ -324,9 +386,12 @@ export class RejectInscriptionDto {
   @ApiProperty({
     description: 'Raison du rejet',
     example: 'Dossier incomplet',
+    required: false,
   })
+  @IsOptional()
   @IsString()
-  raison: string;
+  @MaxLength(500)
+  raison?: string;
 }
 
 /**

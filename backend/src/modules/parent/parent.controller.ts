@@ -13,6 +13,8 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -30,10 +32,20 @@ import { ParentActivityPhotosQueryDto } from './dto/parent-activity-photos.query
 @AllowedStatuses('ACTIVE', 'INVITED')
 @ApiBearerAuth()
 export class ParentController {
+  private readonly logger = new Logger(ParentController.name);
+
   constructor(
     private readonly parentService: ParentService,
     private readonly classActivityPhotosService: ClassActivityPhotosService,
   ) {}
+
+  private resolveUserId(req: { user?: { userId?: string }; utilisateur?: { id?: string } }): string {
+    const id = req.utilisateur?.id ?? req.user?.userId;
+    if (!id) {
+      throw new UnauthorizedException('Session invalide — reconnectez-vous');
+    }
+    return id;
+  }
 
   @Get('me')
   @ApiOperation({ summary: 'Récupérer mon profil' })
@@ -64,7 +76,9 @@ export class ParentController {
     },
   })
   async getMe(@Req() req: any) {
-    return this.parentService.getMyProfile(req.user.userId);
+    const userId = this.resolveUserId(req);
+    this.logger.debug(`GET /parent/me userId=${userId}`);
+    return this.parentService.getMyProfile(userId);
   }
 
   @Patch('me')
@@ -83,7 +97,7 @@ export class ParentController {
     },
   })
   async updateMe(@Req() req: any, @Body() dto: UpdateParentMeDto) {
-    return this.parentService.updateMyProfile(req.user.userId, dto);
+    return this.parentService.updateMyProfile(this.resolveUserId(req), dto);
   }
 
   @Post('enfants')
@@ -91,7 +105,7 @@ export class ParentController {
   @ApiOperation({ summary: 'Ajouter un enfant à ma famille (tuteur principal)' })
   @ApiResponse({ status: 201, description: 'Enfant créé et assigné à une classe' })
   async createChild(@Req() req: any, @Body() dto: CreateParentEnfantDto) {
-    return this.parentService.createMyChild(req.user.userId, dto);
+    return this.parentService.createMyChild(this.resolveUserId(req), dto);
   }
 
   @Post('me/change-password')
@@ -141,7 +155,7 @@ export class ParentController {
     @Param('enfantId') enfantId: string,
     @Query() query: GetPresencesQueryDto,
   ) {
-    return this.parentService.getChildPresences(req.user.userId, enfantId, query);
+    return this.parentService.getChildPresences(this.resolveUserId(req), enfantId, query);
   }
 
   @Get('classes/:classeId/journal/latest')
@@ -166,7 +180,7 @@ export class ParentController {
     @Param('classeId') classeId: string,
     @Query('date') date?: string,
   ) {
-    return this.parentService.getLatestClassJournal(req.user.userId, classeId, date);
+    return this.parentService.getLatestClassJournal(this.resolveUserId(req), classeId, date);
   }
 
   @Get('classes/:classeId/activity-photos')
@@ -182,7 +196,7 @@ export class ParentController {
     @Query() query: ParentActivityPhotosQueryDto,
   ) {
     return this.classActivityPhotosService.listForUser(
-      req.user.userId,
+      this.resolveUserId(req),
       'PARENT',
       {
         classeId,
@@ -220,7 +234,7 @@ export class ParentController {
     },
   })
   async getMyEvents(@Req() req: any, @Query() query: GetEventsQueryDto) {
-    return this.parentService.getMyEvents(req.user.userId, query);
+    return this.parentService.getMyEvents(this.resolveUserId(req), query);
   }
 
   @Get('classes/:classeId/menu')
@@ -247,7 +261,7 @@ export class ParentController {
     @Param('classeId') classeId: string,
     @Query('date') date?: string,
   ) {
-    return this.parentService.getClassMenuOfDay(req.user.userId, classeId, date);
+    return this.parentService.getClassMenuOfDay(this.resolveUserId(req), classeId, date);
   }
 
   @Get('enfants/:enfantId/resume')
@@ -274,7 +288,7 @@ export class ParentController {
     @Param('enfantId') enfantId: string,
     @Query('date') date?: string,
   ) {
-    return this.parentService.getChildDailyResume(req.user.userId, enfantId, date);
+    return this.parentService.getChildDailyResume(this.resolveUserId(req), enfantId, date);
   }
 
   // ─────────────────────────── SANTÉ ───────────────────────────
@@ -282,7 +296,7 @@ export class ParentController {
   @Get('enfants/:enfantId/sante')
   @ApiOperation({ summary: 'Récupérer le profil santé de mon enfant' })
   async getChildSante(@Req() req: any, @Param('enfantId') enfantId: string) {
-    return this.parentService.getChildSante(req.user.userId, enfantId);
+    return this.parentService.getChildSante(this.resolveUserId(req), enfantId);
   }
 
   @Put('enfants/:enfantId/sante')
@@ -292,14 +306,14 @@ export class ParentController {
     @Param('enfantId') enfantId: string,
     @Body() dto: any,
   ) {
-    return this.parentService.upsertChildSante(req.user.userId, enfantId, dto);
+    return this.parentService.upsertChildSante(this.resolveUserId(req), enfantId, dto);
   }
 
   @Delete('enfants/:enfantId/sante')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Supprimer le profil santé de mon enfant' })
   async deleteChildSante(@Req() req: any, @Param('enfantId') enfantId: string) {
-    return this.parentService.deleteChildSante(req.user.userId, enfantId);
+    return this.parentService.deleteChildSante(this.resolveUserId(req), enfantId);
   }
 
   // ─────────────────────────── DÉLÉGATIONS ───────────────────────────
@@ -311,7 +325,7 @@ export class ParentController {
     @Param('enfantId') enfantId: string,
     @Body() dto: any,
   ) {
-    return this.parentService.addDelegation(req.user.userId, enfantId, dto);
+    return this.parentService.addDelegation(this.resolveUserId(req), enfantId, dto);
   }
 
   @Patch('enfants/:enfantId/delegations/:delegationId')
@@ -322,7 +336,7 @@ export class ParentController {
     @Param('delegationId') delegationId: string,
     @Body() dto: any,
   ) {
-    return this.parentService.updateDelegation(req.user.userId, enfantId, delegationId, dto);
+    return this.parentService.updateDelegation(this.resolveUserId(req), enfantId, delegationId, dto);
   }
 
   @Delete('enfants/:enfantId/delegations/:delegationId')
@@ -333,7 +347,7 @@ export class ParentController {
     @Param('enfantId') enfantId: string,
     @Param('delegationId') delegationId: string,
   ) {
-    return this.parentService.deleteDelegation(req.user.userId, enfantId, delegationId);
+    return this.parentService.deleteDelegation(this.resolveUserId(req), enfantId, delegationId);
   }
 }
 

@@ -6,9 +6,9 @@ import { AlertCircle, CheckCircle2, Info, X } from "lucide-react"
 export type InlineAlertVariant = "success" | "error" | "info"
 
 const styles: Record<InlineAlertVariant, string> = {
-  success: "bg-emerald-50 border-emerald-200 text-emerald-800",
-  error: "bg-red-50 border-red-200 text-red-700",
-  info: "bg-sky-50 border-sky-200 text-sky-900",
+  success: "pp-surface-success border",
+  error: "pp-surface-rejected border",
+  info: "pp-surface-primary border",
 }
 
 const icons: Record<InlineAlertVariant, typeof CheckCircle2> = {

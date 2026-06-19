@@ -5,11 +5,13 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useTranslations } from "next-intl"
 import { use } from "react"
 import { Locale } from "@/lib/i18n/config"
 import { apiClient } from "@/lib/api"
+import { isAxiosError } from "axios"
 import { isDelegationRelationCode, normalizeDelegationRelation, toApiDelegationBody, type DelegationFormPayload } from "@/lib/delegation-form"
 import {
   mapEnfantDelegations,
@@ -18,13 +20,11 @@ import {
 } from "@/lib/delegation-api"
 import { SimpleConfirmDialog } from "@/components/ui/simple-confirm-dialog"
 import { ParentChildTabPanel } from "./parent-child-tab-panel"
-import { invalidateParentEnfantsCache } from "./parent-child-selector"
 import { ParentWelcomeCard } from "./parent-welcome-card"
 import {
   readStoredEnfantId,
   useParentSelectedChild,
 } from "./parent-selected-child-context"
-import { ParentAddChild } from "./parent-add-child"
 import { RichTextDisplay } from "@/components/rich-text/rich-text-display"
 import { ActivityPhotoFromApi } from "@/components/activity-photo-from-api"
 import { DailyResume } from "@/types/domain"
@@ -33,6 +33,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Home, CheckCircle2, Baby, Utensils, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, XCircle, HelpCircle, Camera, Clock, MessageSquare, Calendar, Milk, Cookie, ClipboardList, UserRound, History, Archive } from "lucide-react"
 import { ResumeMetricIcon } from "@/components/resume-metric-icon"
+import { presenceBadgeVariant } from "@/lib/design/status-badges"
 import { toast } from "sonner"
 
 const EMPTY_DELEGATION_FORM: DelegationFormPayload = { nom: "", telephone: "", cin: "", relation: "Autre", relationDetail: "" }
@@ -271,7 +272,6 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
     delegationId: string
   } | null>(null)
   const [santeDeleteOpen, setSanteDeleteOpen] = useState(false)
-  const [peutAjouterEnfant, setPeutAjouterEnfant] = useState(false)
 
   const [todayMenu, setTodayMenu] = useState<{ date: string; entree?: string | null; plat?: string | null; dessert?: string | null } | null>(null)
   const [weekMenus, setWeekMenus] = useState<Record<string, { date: string; entree?: string | null; plat?: string | null; dessert?: string | null }>>({})
@@ -340,6 +340,92 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
 
   const searchParamsRef = useRef(searchParams)
   searchParamsRef.current = searchParams
+
+  const [parentEventsLoaded, setParentEventsLoaded] = useState(false)
+
+  // Événements : chargement différé (ne bloque pas l'affichage du dashboard)
+  useEffect(() => {
+    if (profileLoading) return
+    if (parentEventsLoaded && activeTab !== "events") return
+
+    let cancelled = false
+    async function loadParentEvents() {
+      try {
+        const eventsRes = await apiClient.listParentEvents({ page: 1, pageSize: 50 })
+        const payload = eventsRes.data
+        const rawEvents: any[] = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : Array.isArray(payload) ? payload : []
+        const nowTs = Date.now()
+        const normalizedEvents = rawEvents.map((ev: { id?: string; startAt?: string; endAt?: string; titre?: string; title?: string; description?: string; classeId?: string | null }) => {
+          const start = ev.startAt ? new Date(ev.startAt) : null
+          const end   = ev.endAt   ? new Date(ev.endAt)   : null
+          let timeLabel: string | null = null
+          if (start) { const st = start.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" }); timeLabel = end ? `${st} – ${end.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}` : st }
+          const costVal =
+            typeof (ev as { cost?: unknown }).cost === "number"
+              ? (ev as { cost?: number }).cost
+              : typeof (ev as { cout?: unknown }).cout === "number"
+                ? (ev as { cout?: number }).cout
+                : null
+          const currencyVal =
+            typeof (ev as { currency?: unknown }).currency === "string"
+              ? (ev as { currency?: string }).currency
+              : typeof (ev as { devise?: unknown }).devise === "string"
+                ? (ev as { devise?: string }).devise
+                : null
+          return {
+            id: ev.id ?? String(Math.random()),
+            date: start ? start.toLocaleDateString(dateLocale, { day: "2-digit", month: "short" }).toUpperCase() : "",
+            rawDate: ev.startAt ?? null,
+            title: ev.titre ?? ev.title ?? "",
+            time: timeLabel,
+            description: ev.description ?? null,
+            classeId: ev.classeId ?? null,
+            cost: costVal,
+            currency: currencyVal,
+            sortTs: start?.getTime() ?? 0,
+            endTs: end?.getTime() ?? start?.getTime() ?? nowTs,
+          }
+        })
+        if (!cancelled) {
+          setUpcomingEvents(
+            normalizedEvents
+              .filter(ev => ev.endTs >= nowTs)
+              .sort((a, b) => a.sortTs - b.sortTs)
+              .map(ev => ({
+                id: ev.id,
+                date: ev.date,
+                rawDate: ev.rawDate,
+                title: ev.title,
+                time: ev.time,
+                description: ev.description,
+                classeId: ev.classeId,
+                cost: ev.cost,
+                currency: ev.currency,
+              })),
+          )
+          setPastEvents(
+            normalizedEvents
+              .filter(ev => ev.endTs < nowTs)
+              .sort((a, b) => b.sortTs - a.sortTs)
+              .map(ev => ({
+                id: ev.id,
+                date: ev.date,
+                rawDate: ev.rawDate,
+                title: ev.title,
+                time: ev.time,
+                description: ev.description,
+                classeId: ev.classeId,
+                cost: ev.cost,
+                currency: ev.currency,
+              })),
+          )
+          setParentEventsLoaded(true)
+        }
+      } catch { /* ignore */ }
+    }
+    void loadParentEvents()
+    return () => { cancelled = true }
+  }, [profileLoading, activeTab, parentEventsLoaded, dateLocale])
 
   // Tab/date query params only — selected child id stays in context + localStorage (not the URL).
   useEffect(() => {
@@ -500,7 +586,6 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
         setEnfantsInFamily(enfants)
         if (!cancelled) {
           setEnfantsArchives(Array.isArray(profile?.enfantsArchives) ? profile.enfantsArchives : [])
-          setPeutAjouterEnfant(Boolean(profile?.peutAjouterEnfant))
           setProfilIncomplet(Boolean(profile?.profilIncomplet))
           setProfileIncompleteMessage(
             typeof profile?.message === "string" ? profile.message : null,
@@ -516,80 +601,6 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
           setEditAdresse(profile?.adresse ?? tts[0]?.adresse ?? "")
         }
 
-        const loadParentEvents = async () => {
-          try {
-            const eventsRes = await apiClient.listParentEvents({ page: 1, pageSize: 50 })
-            const payload = eventsRes.data
-            const rawEvents: any[] = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : Array.isArray(payload) ? payload : []
-            const nowTs = Date.now()
-            const normalizedEvents = rawEvents.map((ev: { id?: string; startAt?: string; endAt?: string; titre?: string; title?: string; description?: string; classeId?: string | null }) => {
-              const start = ev.startAt ? new Date(ev.startAt) : null
-              const end   = ev.endAt   ? new Date(ev.endAt)   : null
-              let timeLabel: string | null = null
-              if (start) { const st = start.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" }); timeLabel = end ? `${st} – ${end.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}` : st }
-              const costVal =
-                typeof (ev as { cost?: unknown }).cost === "number"
-                  ? (ev as { cost?: number }).cost
-                  : typeof (ev as { cout?: unknown }).cout === "number"
-                    ? (ev as { cout?: number }).cout
-                    : null
-              const currencyVal =
-                typeof (ev as { currency?: unknown }).currency === "string"
-                  ? (ev as { currency?: string }).currency
-                  : typeof (ev as { devise?: unknown }).devise === "string"
-                    ? (ev as { devise?: string }).devise
-                    : null
-              return {
-                id: ev.id ?? String(Math.random()),
-                date: start ? start.toLocaleDateString(dateLocale, { day: "2-digit", month: "short" }).toUpperCase() : "",
-                rawDate: ev.startAt ?? null,
-                title: ev.titre ?? ev.title ?? "",
-                time: timeLabel,
-                description: ev.description ?? null,
-                classeId: ev.classeId ?? null,
-                cost: costVal,
-                currency: currencyVal,
-                sortTs: start?.getTime() ?? 0,
-                endTs: end?.getTime() ?? start?.getTime() ?? nowTs,
-              }
-            })
-            if (!cancelled) {
-              setUpcomingEvents(
-                normalizedEvents
-                  .filter(ev => ev.endTs >= nowTs)
-                  .sort((a, b) => a.sortTs - b.sortTs)
-                  .map(ev => ({
-                    id: ev.id,
-                    date: ev.date,
-                    rawDate: ev.rawDate,
-                    title: ev.title,
-                    time: ev.time,
-                    description: ev.description,
-                    classeId: ev.classeId,
-                    cost: ev.cost,
-                    currency: ev.currency,
-                  })),
-              )
-              setPastEvents(
-                normalizedEvents
-                  .filter(ev => ev.endTs < nowTs)
-                  .sort((a, b) => b.sortTs - a.sortTs)
-                  .map(ev => ({
-                    id: ev.id,
-                    date: ev.date,
-                    rawDate: ev.rawDate,
-                    title: ev.title,
-                    time: ev.time,
-                    description: ev.description,
-                    classeId: ev.classeId,
-                    cost: ev.cost,
-                    currency: ev.currency,
-                  })),
-              )
-            }
-          } catch { /* ignore */ }
-        }
-
         if (!enfants.length) {
           if (!cancelled) {
             applyCommonProfileFields()
@@ -602,7 +613,6 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
             setUpcomingEvents([])
             setPastEvents([])
           }
-          await loadParentEvents()
           return
         }
 
@@ -613,10 +623,31 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
           applyCommonProfileFields()
           prevSelectedEnfantIdRef.current = null
           setSelectedEnfantId(String(enfant.id))
-          await loadParentEvents()
         }
-      } catch {
-        if (!cancelled) setProfileError(t("ui.profileLoadError"))
+      } catch (err: unknown) {
+        if (cancelled) return
+        if (isAxiosError(err)) {
+          const status = err.response?.status
+          const apiMessage =
+            typeof err.response?.data === "object" &&
+            err.response?.data !== null &&
+            "message" in err.response.data &&
+            typeof (err.response.data as { message?: unknown }).message === "string"
+              ? (err.response.data as { message: string }).message
+              : null
+
+          if (status === 403 || status === 404) {
+            setProfilIncomplet(true)
+            setProfileIncompleteMessage(apiMessage ?? t("ui.profileIncomplete"))
+            setEnfantsInFamily([])
+            setChild(null)
+            return
+          }
+        }
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[parent dashboard] getParentProfile failed", err)
+        }
+        setProfileError(t("ui.profileLoadError"))
       } finally { if (!cancelled) setProfileLoading(false) }
     }
     loadProfileAndResume()
@@ -771,28 +802,42 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
     let cancelled = false
     const todayKey = formatLocalDateKey(new Date())
 
+    async function loadChildSummary(enfant: { id?: string | number }) {
+      const enfantId = String(enfant.id)
+      try {
+        const [resumeRes, presRes] = await Promise.all([
+          apiClient.getChildResume(enfantId, todayKey),
+          apiClient.getChildPresences(enfantId, 1, 1, todayKey, todayKey).catch(() => null),
+        ])
+        const payload = presRes?.data as { data?: unknown[] } | undefined
+        const items = Array.isArray(payload?.data) ? payload.data : []
+        const row = items[0] as { statut?: string } | undefined
+        return [enfantId, { resume: parseResumeBody(resumeRes.data), presenceStatus: row?.statut ?? null }] as const
+      } catch {
+        return [enfantId, { resume: null, presenceStatus: null }] as const
+      }
+    }
+
     async function loadChildrenTodaySummaries() {
       setChildrenTodayLoading(true)
-      const entries = await Promise.all(
-        enfantsInFamily.map(async (enfant: any) => {
-          const enfantId = String(enfant.id)
-          try {
-            const [resumeRes, presRes] = await Promise.all([
-              apiClient.getChildResume(enfantId, todayKey),
-              apiClient.getChildPresences(enfantId, 1, 1, todayKey, todayKey).catch(() => null),
-            ])
-            const payload = presRes?.data as { data?: unknown[] } | undefined
-            const items = Array.isArray(payload?.data) ? payload.data : []
-            const row = items[0] as { statut?: string } | undefined
-            return [enfantId, { resume: parseResumeBody(resumeRes.data), presenceStatus: row?.statut ?? null }] as const
-          } catch {
-            return [enfantId, { resume: null, presenceStatus: null }] as const
-          }
-        }),
-      )
+      const primaryId = selectedEnfantId ?? String(enfantsInFamily[0]?.id ?? "")
+      const primary = enfantsInFamily.filter((e: any) => String(e.id) === primaryId)
+      const primaryList = primary.length > 0 ? primary : enfantsInFamily.slice(0, 1)
+
+      const entries = await Promise.all(primaryList.map(loadChildSummary))
       if (!cancelled) {
         setChildrenTodaySummaries(Object.fromEntries(entries))
         setChildrenTodayLoading(false)
+      }
+
+      const rest = enfantsInFamily.filter(
+        (e: any) => !primaryList.some((p: any) => String(p.id) === String(e.id)),
+      )
+      if (rest.length > 0 && !cancelled) {
+        const more = await Promise.all(rest.map(loadChildSummary))
+        if (!cancelled) {
+          setChildrenTodaySummaries((prev) => ({ ...prev, ...Object.fromEntries(more) }))
+        }
       }
     }
 
@@ -800,7 +845,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
     return () => {
       cancelled = true
     }
-  }, [activeTab, enfantsInFamily, enfantsInFamilyKey, resumeRefreshTick, t])
+  }, [activeTab, enfantsInFamilyKey, selectedEnfantId, resumeRefreshTick, t])
 
   // Résumé du jour (Accueil) — même source que Présence pour « aujourd’hui »
   useEffect(() => {
@@ -1009,10 +1054,18 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
   }, [selectedEnfantId, enfantsInFamilyKey])
 
   if (profileLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="text-center space-y-3">
-        <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto animate-pulse" style={{ background: "#AEDFF7" }}><Baby className="w-7 h-7 text-sky-800" aria-hidden /></div>
-        <p className="text-sm text-gray-500">{t("ui.loading")}</p>
+    <div className="min-h-screen bg-white pb-24">
+      <div className="sticky top-0 z-30 bg-white border-b border-border px-4 py-3 animate-pulse">
+        <div className="h-10 bg-muted rounded-xl max-w-xs" />
+      </div>
+      <div className="px-4 py-6 space-y-4 max-w-lg mx-auto">
+        <div className="h-32 bg-muted/60 rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-24 bg-muted/50 rounded-xl animate-pulse" />
+          <div className="h-24 bg-muted/50 rounded-xl animate-pulse" />
+        </div>
+        <div className="h-40 bg-muted/40 rounded-2xl animate-pulse" />
+        <p className="text-center text-sm text-muted-foreground">{t("ui.loading")}</p>
       </div>
     </div>
   )
@@ -1269,11 +1322,6 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                 : status === "Absent"
                 ? t("ui.statusAbsent")
                 : t("ui.unknownStatus")
-              const statusClass = status === "Present"
-                ? "bg-emerald-100 text-emerald-700"
-                : status === "Absent"
-                ? "bg-red-100 text-red-700"
-                : "bg-gray-100 text-gray-600"
 
               return (
                 <button
@@ -1299,9 +1347,9 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                     </span>
                   </div>
                   <div className="mt-3 rounded-xl bg-white/80 px-3 py-2 border border-sky-50">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass}`}>
+                    <Badge variant={presenceBadgeVariant(status)} className="text-[11px]">
                       {statusLabel}
-                    </span>
+                    </Badge>
                     <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-600">
                       {resumeLine ?? t("ui.childCardNoSummary")}
                     </p>
@@ -1323,22 +1371,6 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
     <div className="space-y-4">
       <ArchivedChildrenCard />
       <ChildrenOverviewCards />
-
-      {peutAjouterEnfant && (
-        <ParentAddChild
-          onChildAdded={async enfantId => {
-            invalidateParentEnfantsCache()
-            try {
-              const profileRes = await apiClient.getParentProfile()
-              const enfants = Array.isArray(profileRes.data?.enfants) ? profileRes.data.enfants : []
-              setEnfantsInFamily(enfants)
-              handleSelectChild(enfantId, { resetDates: true })
-            } catch {
-              toast.error(t("ui.addChildProfileReloadError"))
-            }
-          }}
-        />
-      )}
 
       <ParentClassPhotosCard />
 
@@ -1564,12 +1596,20 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
 
     return (
       <div className="px-4 pt-4 pb-4 space-y-4">
-        <div className={`rounded-2xl p-4 border-2 ${statut === "Present" ? "bg-emerald-50 border-emerald-300" : statut === "Absent" ? "bg-red-50 border-red-300" : "bg-gray-50 border-gray-200"}`}>
+        <div
+          className={`rounded-2xl p-4 border-2 ${
+            statut === "Present"
+              ? "pp-surface-success border-[var(--status-present-border)]"
+              : statut === "Absent"
+                ? "pp-surface-rejected border-[var(--status-rejected-border)]"
+                : "bg-[var(--status-neutral-bg)] border-[var(--status-neutral-border)]"
+          }`}
+        >
           <div className="flex items-center gap-3">
             {statut === "Present" ? (
-              <CheckCircle2 className="w-9 h-9 shrink-0 text-emerald-600" aria-hidden />
+              <CheckCircle2 className="w-9 h-9 shrink-0 text-[var(--status-present-text)]" aria-hidden />
             ) : statut === "Absent" ? (
-              <XCircle className="w-9 h-9 shrink-0 text-red-600" aria-hidden />
+              <XCircle className="w-9 h-9 shrink-0 text-[var(--status-rejected-text)]" aria-hidden />
             ) : (
               <HelpCircle className="w-9 h-9 shrink-0 text-gray-400" aria-hidden />
             )}
@@ -1696,13 +1736,13 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
             {/* Mini stats */}
             {(nbPresent > 0 || nbAbsent > 0) && (
               <div className="flex gap-2 mb-3">
-                <div className="flex-1 rounded-xl px-3 py-2 text-center" style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
-                  <p className="text-lg font-bold text-emerald-700">{nbPresent}</p>
-                  <p className="text-xs text-emerald-600">{t("ui.present")}</p>
+                <div className="flex-1 rounded-xl px-3 py-2 text-center pp-surface-success border">
+                  <p className="text-lg font-bold pp-text-success">{nbPresent}</p>
+                  <p className="text-xs pp-text-success">{t("ui.present")}</p>
                 </div>
-                <div className="flex-1 rounded-xl px-3 py-2 text-center" style={{ background: "#FFF5F5", border: "1px solid #FED7D7" }}>
-                  <p className="text-lg font-bold text-red-600">{nbAbsent}</p>
-                  <p className="text-xs text-red-500">{t("ui.absent")}</p>
+                <div className="flex-1 rounded-xl px-3 py-2 text-center pp-surface-rejected border">
+                  <p className="text-lg font-bold text-[var(--status-rejected-text)]">{nbAbsent}</p>
+                  <p className="text-xs text-[var(--status-rejected-text)]">{t("ui.absent")}</p>
                 </div>
                 <div className="flex-1 rounded-xl px-3 py-2 text-center" style={{ background: "#EAF5FB", border: "1px solid #C5E8F7" }}>
                   <p className="text-lg font-bold" style={{ color: "#1A73A7" }}>{presenceTotal}</p>
@@ -1724,9 +1764,9 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                   return (
                     <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <p className="text-sm text-gray-700 capitalize">{label}</p>
-                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${p.statut === "Present" ? "bg-emerald-100 text-emerald-700" : p.statut === "Absent" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}>
+                      <Badge variant={presenceBadgeVariant(p.statut)}>
                         {stLabel}
-                      </span>
+                      </Badge>
                     </div>
                   )
                 })}

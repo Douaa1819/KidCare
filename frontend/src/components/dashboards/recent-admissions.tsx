@@ -3,10 +3,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 const admissions = [
-  { name: "Amin El Fassi", age: "2 ans", date: "20/10/2025", status: "En revue" },
-  { name: "Lina Tazi", age: "3 ans", date: "18/10/2025", status: "Accepté" },
-  { name: "Omar Benjaloum", age: "4 ans", date: "22/10/2025", status: "Attente" },
+  { name: "Amin El Fassi", age: "2 ans", date: "20/10/2025", status: "En revue" as const },
+  { name: "Lina Tazi", age: "3 ans", date: "18/10/2025", status: "Accepté" as const },
+  { name: "Omar Benjaloum", age: "4 ans", date: "22/10/2025", status: "Attente" as const },
 ]
+
+const STATUS_VARIANT = {
+  "En revue": "review",
+  Accepté: "accepted",
+  Attente: "neutral",
+} as const
 
 export function RecentAdmissions() {
   return (
@@ -24,9 +30,7 @@ export function RecentAdmissions() {
                   {adm.age} • {adm.date}
                 </p>
               </div>
-              {adm.status === "En revue" && <Badge className="bg-blue-100 text-blue-700">En revue</Badge>}
-              {adm.status === "Accepté" && <Badge className="bg-green-100 text-green-700">Accepté</Badge>}
-              {adm.status === "Attente" && <Badge className="bg-gray-100 text-gray-700">Attente</Badge>}
+              <Badge variant={STATUS_VARIANT[adm.status]}>{adm.status}</Badge>
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" className="text-xs bg-transparent">

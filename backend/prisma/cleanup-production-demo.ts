@@ -5,12 +5,21 @@
  * Usage:
  *   pnpm run cleanup:demo:dry-run
  *   pnpm run cleanup:demo
+ *   SHOW_DEMO_CREDENTIALS=true pnpm run cleanup:demo   # affiche les mots de passe (dev uniquement)
+ *
+ * Variables d'environnement :
+ *   ADMIN_PASSWORD          — mot de passe Super Admin (défaut: change_me)
+ *   DEMO_ADMIN_PASSWORD     — mot de passe Admin sophie@wlw.ma
+ *   DEMO_TEACHER_PASSWORD   — mot de passe enseignant
+ *   DEMO_PARENT_PASSWORD    — mot de passe parent
+ *   SHOW_DEMO_CREDENTIALS   — "true" pour afficher les identifiants en fin de script
  */
 import {
   PrismaClient,
   RoleUtilisateur,
   LienTuteur,
   StatutUtilisateur,
+  type Prisma,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -23,21 +32,29 @@ const KEEP_USER_EMAILS = [
   'sophie.parent@wlw.ma',
 ] as const;
 
-const DEMO_PASSWORDS = {
-  'admin@wlw.ma': process.env.ADMIN_PASSWORD ?? 'change_me',
-  'sophie@wlw.ma': 'Sophie123!',
-  'enseignant.sophie@test.com': 'Teacher123!',
-  'sophie.parent@wlw.ma': 'SophieParent123!',
-} as const;
-
-const TARGET_CLASS_NOM = 'TPS';
+type KeepEmail = (typeof KEEP_USER_EMAILS)[number];
 
 const KEEP_CHILDREN = [
   { prenom: 'Hafsa', nom: 'Chemnanne', nomAliases: ['chemnane', 'chemnanne'] },
   { prenom: 'Lucas', nom: 'Martin', nomAliases: ['martin'] },
 ] as const;
 
+const FALLBACK_CLASS_NOM = 'TPS';
+
 const dryRun = process.argv.includes('--dry-run');
+const isProd = (process.env.NODE_ENV ?? 'development') === 'production';
+const showCredentials =
+  process.env.SHOW_DEMO_CREDENTIALS === 'true' ||
+  (!isProd && process.env.SHOW_DEMO_CREDENTIALS !== 'false');
+
+function resolveDemoPasswords(): Record<KeepEmail, string> {
+  return {
+    'admin@wlw.ma': process.env.ADMIN_PASSWORD ?? 'change_me',
+    'sophie@wlw.ma': process.env.DEMO_ADMIN_PASSWORD ?? 'Sophie123!',
+    'enseignant.sophie@test.com': process.env.DEMO_TEACHER_PASSWORD ?? 'Teacher123!',
+    'sophie.parent@wlw.ma': process.env.DEMO_PARENT_PASSWORD ?? 'SophieParent123!',
+  };
+}
 
 function normalize(s: string) {
   return s.trim().toLowerCase();
@@ -58,7 +75,7 @@ async function hashPassword(plain: string) {
   return bcrypt.hash(plain, 10);
 }
 
-async function deleteEnfantDependencies(enfantIds: string[], tx: PrismaClient) {
+async function deleteEnfantDependencies(enfantIds: string[], tx: Prisma.TransactionClient) {
   if (enfantIds.length === 0) return;
 
   const journals = await tx.journalQuotidien.findMany({
@@ -98,8 +115,226 @@ async function deleteEnfantDependencies(enfantIds: string[], tx: PrismaClient) {
   }
 }
 
+function resolveTargetClassId(
+  keepEnfantIds: string[],
+  allEnfants: Array<{ id: string; classeId: string | null }>,
+  allClasses: Array<{ id: string; nom: string }>,
+): string {
+  const counts = new Map<string, number>();
+  for (const id of keepEnfantIds) {
+    const enfant = allEnfants.find((e) => e.id === id);
+    if (enfant?.classeId) {
+      counts.set(enfant.classeId, (counts.get(enfant.classeId) ?? 0) + 1);
+    }
+  }
+
+  const fromChildren = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (fromChildren) return fromChildren;
+
+  const fallback = allClasses.find((c) => c.nom === FALLBACK_CLASS_NOM);
+  if (fallback) return fallback.id;
+
+  if (allClasses.length === 0) {
+    throw new Error('Aucune classe en base — créez les classes avant le nettoyage.');
+  }
+
+  return allClasses[0]!.id;
+}
+
+async function ensureKeptUsersExist(
+  tx: Prisma.TransactionClient,
+  passwords: Record<KeepEmail, string>,
+  targetClassId: string,
+): Promise<{
+  parentTuteurId: string;
+  parentFamilleId: string;
+  teacherEnseignantId: string;
+  keepUserIds: string[];
+}> {
+  const classe = await tx.classe.findUnique({ where: { id: targetClassId } });
+
+  if (!classe) {
+    throw new Error(`Classe cible introuvable (${targetClassId}).`);
+  }
+
+  let enseignant = await tx.enseignant.findFirst({
+    where: { utilisateur: { email: 'enseignant.sophie@test.com' } },
+  });
+  if (!enseignant) {
+    enseignant = await tx.enseignant.create({ data: { fonction: 'Éducatrice' } });
+  }
+
+  const famille = await tx.famille.upsert({
+    where: { emailPrincipal: 'sophie.parent@wlw.ma' },
+    update: { languePreferee: 'fr' },
+    create: { emailPrincipal: 'sophie.parent@wlw.ma', languePreferee: 'fr' },
+  });
+
+  const tuteur = await tx.tuteur.upsert({
+    where: { email: 'sophie.parent@wlw.ma' },
+    update: {
+      prenom: 'Sophie',
+      nom: 'Parent',
+      principal: true,
+      lien: LienTuteur.Mere,
+      familleId: famille.id,
+    },
+    create: {
+      email: 'sophie.parent@wlw.ma',
+      prenom: 'Sophie',
+      nom: 'Parent',
+      telephone: '+212600000000',
+      lien: LienTuteur.Mere,
+      principal: true,
+      familleId: famille.id,
+    },
+  });
+
+  const userSpecs: Array<{
+    email: KeepEmail;
+    prenom: string;
+    nom: string;
+    role: RoleUtilisateur;
+    tuteurId?: string;
+    enseignantId?: string;
+  }> = [
+    { email: 'admin@wlw.ma', prenom: 'Admin', nom: 'System', role: RoleUtilisateur.SUPER_ADMIN },
+    { email: 'sophie@wlw.ma', prenom: 'Sophie', nom: 'Admin', role: RoleUtilisateur.ADMIN },
+    {
+      email: 'enseignant.sophie@test.com',
+      prenom: 'Sophie',
+      nom: 'Enseignante',
+      role: RoleUtilisateur.ENSEIGNANT,
+      enseignantId: enseignant.id,
+    },
+    {
+      email: 'sophie.parent@wlw.ma',
+      prenom: 'Sophie',
+      nom: 'Parent',
+      role: RoleUtilisateur.PARENT,
+      tuteurId: tuteur.id,
+    },
+  ];
+
+  const keepUserIds: string[] = [];
+
+  for (const spec of userSpecs) {
+    const hashed = await hashPassword(passwords[spec.email]);
+    const user = await tx.utilisateur.upsert({
+      where: { email: spec.email },
+      update: {
+        prenom: spec.prenom,
+        nom: spec.nom,
+        role: spec.role,
+        statut: StatutUtilisateur.ACTIVE,
+        tempPassword: hashed,
+        activeLe: new Date(),
+        archivedAt: null,
+        deletedAt: null,
+        sessionRevokedAt: null,
+        passwordResetTokenHash: null,
+        passwordResetExpires: null,
+        tuteurId: spec.role === RoleUtilisateur.PARENT ? spec.tuteurId ?? null : null,
+        enseignantId: spec.role === RoleUtilisateur.ENSEIGNANT ? spec.enseignantId ?? null : null,
+      },
+      create: {
+        email: spec.email,
+        prenom: spec.prenom,
+        nom: spec.nom,
+        role: spec.role,
+        statut: StatutUtilisateur.ACTIVE,
+        tempPassword: hashed,
+        activeLe: new Date(),
+        tuteurId: spec.tuteurId,
+        enseignantId: spec.enseignantId,
+      },
+    });
+    keepUserIds.push(user.id);
+  }
+
+  await tx.enseignantClasse.upsert({
+    where: {
+      enseignantId_classeId: { enseignantId: enseignant.id, classeId: classe.id },
+    },
+    update: { dateFin: null },
+    create: { enseignantId: enseignant.id, classeId: classe.id },
+  });
+
+  return {
+    parentTuteurId: tuteur.id,
+    parentFamilleId: famille.id,
+    teacherEnseignantId: enseignant.id,
+    keepUserIds,
+  };
+}
+
+async function ensureKeptChildren(
+  tx: Prisma.TransactionClient,
+  parentFamilleId: string,
+  targetClassId: string,
+  existingKeepIds: string[],
+  allEnfants: Array<{ id: string; prenom: string; nom: string }>,
+): Promise<string[]> {
+  const keepIds: string[] = [];
+
+  const defaults = [
+    { prenom: 'Hafsa', nom: 'Chemnanne', dateNaissance: new Date('2021-01-10') },
+    { prenom: 'Lucas', nom: 'Martin', dateNaissance: new Date('2022-01-05'), genre: 'M' },
+  ] as const;
+
+  for (let i = 0; i < KEEP_CHILDREN.length; i++) {
+    const target = KEEP_CHILDREN[i]!;
+    const def = defaults[i]!;
+
+    let enfantId = existingKeepIds.find((id) => {
+      const e = allEnfants.find((x) => x.id === id);
+      return e && childMatches(e.prenom, e.nom, target);
+    });
+
+    if (!enfantId) {
+      const existing = await tx.enfant.findFirst({
+        where: { prenom: def.prenom, nom: def.nom },
+      });
+      if (existing) {
+        enfantId = existing.id;
+      } else {
+        const created = await tx.enfant.create({
+          data: {
+            prenom: def.prenom,
+            nom: def.nom,
+            dateNaissance: def.dateNaissance,
+            familleId: parentFamilleId,
+            classeId: targetClassId,
+            ...('genre' in def ? { genre: def.genre } : {}),
+          },
+        });
+        enfantId = created.id;
+        console.log(`  ✓ Enfant créé : ${def.prenom} ${def.nom}`);
+      }
+    }
+
+    await tx.enfant.update({
+      where: { id: enfantId },
+      data: {
+        prenom: def.prenom,
+        nom: def.nom,
+        familleId: parentFamilleId,
+        classeId: targetClassId,
+        archivedAt: null,
+        archivedBy: null,
+      },
+    });
+
+    keepIds.push(enfantId);
+  }
+
+  return keepIds;
+}
+
 async function main() {
   console.log(dryRun ? '🔍 DRY RUN — aucune modification' : '🧹 CLEANUP production demo — démarrage');
+
+  const passwords = resolveDemoPasswords();
 
   const allUsers = await prisma.utilisateur.findMany({
     select: { id: true, email: true, role: true, tuteurId: true, enseignantId: true },
@@ -116,120 +351,80 @@ async function main() {
   const keepEnfantIds: string[] = [];
   for (const target of KEEP_CHILDREN) {
     const match = allEnfants.find((e) => childMatches(e.prenom, e.nom, target));
-    if (!match) {
-      throw new Error(`Enfant introuvable : ${target.prenom} ${target.nom}`);
-    }
-    keepEnfantIds.push(match.id);
+    if (match) keepEnfantIds.push(match.id);
   }
+
+  const targetClassId = resolveTargetClassId(keepEnfantIds, allEnfants, allClasses);
+  const targetClass = allClasses.find((c) => c.id === targetClassId);
 
   const removeEnfantIds = allEnfants.filter((e) => !keepEnfantIds.includes(e.id)).map((e) => e.id);
 
-  const targetClass = allClasses.find((c) => c.nom === TARGET_CLASS_NOM);
-  if (!targetClass) {
-    throw new Error(`Classe cible introuvable : ${TARGET_CLASS_NOM}`);
-  }
-
-  const parentUser = allUsers.find((u) => u.email.toLowerCase() === 'sophie.parent@wlw.ma');
-  if (!parentUser?.tuteurId) {
-    throw new Error('Compte parent sophie.parent@wlw.ma ou tuteur lié introuvable');
-  }
-
-  const parentTuteur = await prisma.tuteur.findUnique({
-    where: { id: parentUser.tuteurId },
-    select: { id: true, familleId: true },
-  });
-  if (!parentTuteur) {
-    throw new Error('Tuteur parent introuvable');
-  }
-
-  const teacherUser = allUsers.find((u) => u.email.toLowerCase() === 'enseignant.sophie@test.com');
-  const teacherEnseignantId = teacherUser?.enseignantId;
-  if (!teacherUser || !teacherEnseignantId) {
-    throw new Error('Enseignant sophie introuvable');
-  }
-
-  const removeTuteurIds = (
-    await prisma.tuteur.findMany({
-      where: { id: { not: parentTuteur.id } },
-      select: { id: true },
-    })
-  ).map((t) => t.id);
-
-  const removeEnseignantIds = (
-    await prisma.enseignant.findMany({
-      where: { id: { not: teacherEnseignantId } },
-      select: { id: true },
-    })
-  ).map((e) => e.id);
-
-  const removeFamilleIds = (
-    await prisma.famille.findMany({
-      where: { id: { not: parentTuteur.familleId } },
-      select: { id: true },
-    })
-  ).map((f) => f.id);
-
   console.log('\n📊 Plan de nettoyage');
-  console.log(`  Utilisateurs conservés : ${keepUserIds.length}`);
+  console.log(`  Utilisateurs conservés : ${keepUserIds.length} / ${KEEP_USER_EMAILS.length}`);
   console.log(`  Utilisateurs supprimés : ${removeUserIds.length}`);
-  console.log(`  Enfants conservés     : ${keepEnfantIds.length}`);
+  console.log(`  Enfants trouvés        : ${keepEnfantIds.length} / ${KEEP_CHILDREN.length}`);
   console.log(`  Enfants supprimés     : ${removeEnfantIds.length}`);
-  console.log(`  Familles supprimées   : ${removeFamilleIds.length}`);
-  console.log(`  Classe cible          : ${targetClass.nom} (${targetClass.id})`);
+  console.log(`  Classe cible          : ${targetClass?.nom ?? targetClassId}`);
 
   if (dryRun) {
     console.log('\n✅ Dry run terminé — aucune écriture.');
+    console.log('   Exécutez : pnpm run cleanup:demo');
     return;
+  }
+
+  if (isProd && process.env.CLEANUP_ALLOW !== 'true') {
+    console.error(
+      '\n❌ Nettoyage refusé en production.\n' +
+        '   Définissez CLEANUP_ALLOW=true pour confirmer.',
+    );
+    process.exit(1);
   }
 
   await prisma.$transaction(
     async (tx) => {
-      // Inscriptions / candidatures test
+      const ensured = await ensureKeptUsersExist(tx, passwords, targetClassId);
+
+      await tx.tuteur.deleteMany({
+        where: {
+          familleId: ensured.parentFamilleId,
+          id: { not: ensured.parentTuteurId },
+        },
+      });
+
       const deletedInscriptions = await tx.inscription.deleteMany();
       console.log(`  ✓ Inscriptions supprimées : ${deletedInscriptions.count}`);
 
-      // Diffusions liées aux tuteurs supprimés
+      const removeTuteurIds = (
+        await tx.tuteur.findMany({
+          where: { id: { not: ensured.parentTuteurId } },
+          select: { id: true },
+        })
+      ).map((t) => t.id);
+
       if (removeTuteurIds.length > 0) {
         await tx.diffusionResume.deleteMany({ where: { tuteurId: { in: removeTuteurIds } } });
       }
 
-      await deleteEnfantDependencies(removeEnfantIds, tx as unknown as PrismaClient);
-      const deletedEnfants = await tx.enfant.deleteMany({ where: { id: { in: removeEnfantIds } } });
-      console.log(`  ✓ Enfants supprimés : ${deletedEnfants.count}`);
+      await deleteEnfantDependencies(removeEnfantIds, tx);
+      if (removeEnfantIds.length > 0) {
+        await tx.enfant.updateMany({
+          where: { archivedBy: { in: removeUserIds } },
+          data: { archivedBy: null },
+        });
+        const deletedEnfants = await tx.enfant.deleteMany({ where: { id: { in: removeEnfantIds } } });
+        console.log(`  ✓ Enfants supprimés : ${deletedEnfants.count}`);
+      }
 
-      const hafsaId = keepEnfantIds.find((id) => {
-        const e = allEnfants.find((x) => x.id === id);
-        return e && childMatches(e.prenom, e.nom, KEEP_CHILDREN[0]);
-      })!;
-      const lucasId = keepEnfantIds.find((id) => {
-        const e = allEnfants.find((x) => x.id === id);
-        return e && childMatches(e.prenom, e.nom, KEEP_CHILDREN[1]);
-      })!;
+      const finalKeepEnfantIds = await ensureKeptChildren(
+        tx,
+        ensured.parentFamilleId,
+        targetClassId,
+        keepEnfantIds,
+        allEnfants,
+      );
 
-      // Réassigner les enfants conservés avant suppression des familles orphelines
-      await tx.enfant.update({
-        where: { id: hafsaId },
-        data: {
-          prenom: 'Hafsa',
-          nom: 'Chemnanne',
-          familleId: parentTuteur.familleId,
-          classeId: targetClass.id,
-          archivedAt: null,
-          archivedBy: null,
-        },
-      });
-      await tx.enfant.update({
-        where: { id: lucasId },
-        data: {
-          classeId: targetClass.id,
-          archivedAt: null,
-          archivedBy: null,
-          remarques: null,
-        },
-      });
-
-      // Sessions / restrictions utilisateurs supprimés
       if (removeUserIds.length > 0) {
+        await tx.loginHistory.deleteMany({ where: { utilisateurId: { in: removeUserIds } } });
         await tx.userSession.deleteMany({ where: { utilisateurId: { in: removeUserIds } } });
         await tx.userAccessRestriction.deleteMany({ where: { utilisateurId: { in: removeUserIds } } });
         const deletedUsers = await tx.utilisateur.deleteMany({ where: { id: { in: removeUserIds } } });
@@ -240,7 +435,13 @@ async function main() {
         await tx.tuteur.deleteMany({ where: { id: { in: removeTuteurIds } } });
       }
 
-      // Factures des familles supprimées
+      const removeFamilleIds = (
+        await tx.famille.findMany({
+          where: { id: { not: ensured.parentFamilleId } },
+          select: { id: true },
+        })
+      ).map((f) => f.id);
+
       if (removeFamilleIds.length > 0) {
         const factures = await tx.facture.findMany({
           where: { familleId: { in: removeFamilleIds } },
@@ -253,56 +454,57 @@ async function main() {
           await tx.facture.deleteMany({ where: { id: { in: factureIds } } });
         }
         await tx.famille.deleteMany({ where: { id: { in: removeFamilleIds } } });
+        console.log(`  ✓ Familles supprimées : ${removeFamilleIds.length}`);
       }
+
+      const removeEnseignantIds = (
+        await tx.enseignant.findMany({
+          where: { id: { not: ensured.teacherEnseignantId } },
+          select: { id: true },
+        })
+      ).map((e) => e.id);
 
       if (removeEnseignantIds.length > 0) {
         await tx.enseignantClasse.deleteMany({ where: { enseignantId: { in: removeEnseignantIds } } });
         await tx.enseignant.deleteMany({ where: { id: { in: removeEnseignantIds } } });
+        console.log(`  ✓ Enseignants supprimés : ${removeEnseignantIds.length}`);
       }
 
-      // Historique / audit test (conserve les logs des comptes gardés)
       const keepEmails = [...KEEP_USER_EMAILS];
       await tx.loginHistory.deleteMany({
         where: {
-          AND: [
-            { email: { notIn: keepEmails } },
-            { OR: [{ utilisateurId: null }, { utilisateurId: { in: removeUserIds } }] },
-          ],
+          email: { notIn: keepEmails },
+          OR: [{ utilisateurId: null }, { utilisateurId: { notIn: ensured.keepUserIds } }],
         },
       });
       await tx.auditLog.deleteMany({
         where: {
-          AND: [
-            { userEmail: { not: null } },
-            { userEmail: { notIn: keepEmails } },
-          ],
+          userEmail: { not: null, notIn: keepEmails },
         },
       });
 
-      // Enseignant Sophie → uniquement TPS
       await tx.enseignantClasse.deleteMany({
         where: {
-          enseignantId: teacherEnseignantId,
-          classeId: { not: targetClass.id },
+          enseignantId: ensured.teacherEnseignantId,
+          classeId: { not: targetClassId },
         },
       });
       await tx.enseignantClasse.upsert({
         where: {
           enseignantId_classeId: {
-            enseignantId: teacherEnseignantId,
-            classeId: targetClass.id,
+            enseignantId: ensured.teacherEnseignantId,
+            classeId: targetClassId,
           },
         },
         update: { dateFin: null },
         create: {
-          enseignantId: teacherEnseignantId,
-          classeId: targetClass.id,
+          enseignantId: ensured.teacherEnseignantId,
+          classeId: targetClassId,
         },
       });
 
-      // Comptes conservés : statut ACTIVE, mots de passe démo
       for (const email of KEEP_USER_EMAILS) {
-        const hashed = await hashPassword(DEMO_PASSWORDS[email]);
+        const hashed = await hashPassword(passwords[email]);
         const role =
           email === 'admin@wlw.ma'
             ? RoleUtilisateur.SUPER_ADMIN
@@ -328,29 +530,15 @@ async function main() {
         });
       }
 
-      await tx.tuteur.update({
-        where: { id: parentTuteur.id },
-        data: {
-          prenom: 'Sophie',
-          nom: 'Parent',
-          email: 'sophie.parent@wlw.ma',
-          principal: true,
-          lien: LienTuteur.Mere,
-        },
-      });
-
-      await tx.famille.update({
-        where: { id: parentTuteur.familleId },
-        data: { emailPrincipal: 'sophie.parent@wlw.ma' },
-      });
-
-      // Révoquer les anciennes sessions des comptes gardés
       await tx.userSession.updateMany({
-        where: { utilisateurId: { in: keepUserIds } },
+        where: { utilisateurId: { in: ensured.keepUserIds } },
         data: { revoked: true },
       });
+
+      console.log(`  ✓ Enfants conservés : ${finalKeepEnfantIds.length}`);
+      console.log(`  ✓ Enseignant assigné à la classe ${targetClass?.nom ?? targetClassId}`);
     },
-    { timeout: 120_000 },
+    { timeout: 180_000 },
   );
 
   const summary = {
@@ -361,6 +549,8 @@ async function main() {
     classes: await prisma.classe.count(),
     events: await prisma.event.count(),
     menus: await prisma.menu.count(),
+    platformSettings: await prisma.platformSettings.count(),
+    featureFlags: await prisma.featureFlag.count(),
   };
 
   console.log('\n🎉 Nettoyage terminé');
@@ -371,18 +561,27 @@ async function main() {
     orderBy: { email: 'asc' },
   });
   const keptChildren = await prisma.enfant.findMany({
-    select: { prenom: true, nom: true, classeId: true },
+    select: { prenom: true, nom: true, classe: { select: { nom: true } } },
     orderBy: { nom: 'asc' },
   });
+
   console.log('\n👤 Comptes conservés :');
   keptUsers.forEach((u) => console.log(`  - ${u.email} (${u.role}, ${u.statut})`));
   console.log('\n👶 Enfants conservés :');
-  keptChildren.forEach((c) => console.log(`  - ${c.prenom} ${c.nom}`));
-  console.log('\n🔑 Mots de passe démo :');
-  for (const [email, pwd] of Object.entries(DEMO_PASSWORDS)) {
-    console.log(`  - ${email} → ${pwd}`);
+  keptChildren.forEach((c) => console.log(`  - ${c.prenom} ${c.nom} (${c.classe?.nom ?? '—'})`));
+
+  if (showCredentials) {
+    console.log('\n🔑 Identifiants démo (dev — ne pas exposer en production) :');
+    for (const [email, pwd] of Object.entries(passwords)) {
+      console.log(`  - ${email} → ${pwd}`);
+    }
+  } else {
+    console.log('\n🔒 Mots de passe réinitialisés (bcrypt hash en base).');
+    console.log('  SHOW_DEMO_CREDENTIALS=true pour afficher les mots de passe en local.');
+    if (isProd) {
+      console.log('  Production : définissez ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD, DEMO_TEACHER_PASSWORD, DEMO_PARENT_PASSWORD avant le cleanup.');
+    }
   }
-  console.log('\n  Super Admin : connexion via /auth/login (ADMIN_PASSWORD env) ou mot de passe ci-dessus si login-user.');
 }
 
 main()

@@ -1,33 +1,65 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+"use client";
+
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
+import { CheckCircle2, Mail, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AuthShell } from "@/components/auth/auth-shell";
+import type { Locale } from "@/lib/i18n/config";
 
 export default function SuccessScreen() {
+  const t = useTranslations("registration.success");
+  const pathname = usePathname();
+  const locale: Locale = pathname?.startsWith("/ar") ? "ar" : "fr";
+
   return (
-    <div className="container mx-auto px-4 py-8 md:py-20 min-h-screen flex items-center justify-center">
-      <Card className="w-full max-w-md p-8 text-center border-2 border-border/50 space-y-4">
-        <div className="w-full rounded-md bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm text-emerald-800">
-          Votre demande d'inscription a été envoyée avec succès.
-        </div>
-        <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8 text-secondary" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
+    <AuthShell locale={locale} title={t("title")} subtitle={t("subtitle")} maxWidth="md" bareContent>
+      <div className="auth-card relative w-full overflow-hidden text-center space-y-5">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          {[
+            { left: "12%", delay: "0s", color: "bg-[#aedff7]" },
+            { left: "28%", delay: "0.15s", color: "bg-[#b8e986]" },
+            { left: "44%", delay: "0.3s", color: "bg-[#eef8fc]" },
+            { left: "60%", delay: "0.1s", color: "bg-[#aedff7]/70" },
+            { left: "76%", delay: "0.25s", color: "bg-[#b8e986]/70" },
+            { left: "88%", delay: "0.05s", color: "bg-[#dff0fa]" },
+          ].map((piece, i) => (
+            <span
+              key={i}
+              className={`absolute top-0 h-2 w-2 rounded-full opacity-0 animate-[confetti-fall_1.2s_ease-out_forwards] ${piece.color}`}
+              style={{ left: piece.left, animationDelay: piece.delay }}
             />
-          </svg>
+          ))}
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Inscription réussie !</h1>
-        <p className="text-muted-foreground mb-8">
-          Votre demande d'inscription a été soumise avec succès. Nous vous contacterons bientôt.
-        </p>
+        <div className="relative mx-auto w-16 h-16 rounded-full pp-surface-success border flex items-center justify-center animate-[success-pop_0.5s_ease-out]">
+          <CheckCircle2 className="w-9 h-9 text-[var(--status-accepted-text)] animate-[success-check_0.6s_ease-out_0.15s_both]" aria-hidden />
+        </div>
 
-        <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-2">
-          <Link href="/">Retour à l'accueil</Link>
+        <div className="relative space-y-2">
+          <p className="text-base sm:text-lg font-semibold text-[var(--auth-text)]">{t("congratulations")}</p>
+          <p className="text-sm text-[var(--auth-text-muted)] leading-relaxed">{t("message")}</p>
+        </div>
+
+        <div className="relative rounded-xl pp-surface-success border p-4 text-start space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--status-accepted-text)]">{t("nextStepsTitle")}</p>
+          <ul className="space-y-2 text-sm text-[var(--auth-text)]">
+            <li className="flex items-start gap-2">
+              <Clock className="h-4 w-4 mt-0.5 shrink-0 text-[var(--status-accepted-text)]" aria-hidden />
+              <span>{t("nextStepReview")}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Mail className="h-4 w-4 mt-0.5 shrink-0 text-[var(--status-progress-text)]" aria-hidden />
+              <span>{t("nextStepEmail")}</span>
+            </li>
+          </ul>
+        </div>
+
+        <Button asChild variant="auth" className="relative w-full mt-1 font-semibold">
+          <Link href={`/${locale}`}>{t("backToLogin")}</Link>
         </Button>
-      </Card>
-    </div>
-  )
+      </div>
+    </AuthShell>
+  );
 }

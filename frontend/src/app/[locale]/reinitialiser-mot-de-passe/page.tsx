@@ -94,11 +94,11 @@ function ResetPasswordForm({ locale }: { locale: Locale }) {
         ) : null}
 
         <div className="space-y-2 text-left">
-          <label htmlFor="newPassword" className="text-sm font-medium text-foreground">
+          <label htmlFor="newPassword" className="auth-label">
             {t("newPasswordLabel")}
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 auth-field-icon pointer-events-none" />
             <input
               id="newPassword"
               type="password"
@@ -107,19 +107,19 @@ function ResetPasswordForm({ locale }: { locale: Locale }) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               disabled={!tokenFromUrl || Boolean(success)}
-              className="w-full rounded-xl border border-input bg-background pl-9 pr-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/40"
+              className="auth-field auth-field-focus"
               placeholder="••••••••"
             />
           </div>
-          <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
+          <p className="text-xs text-[var(--auth-text-muted)]">{t("passwordHint")}</p>
         </div>
 
         <div className="space-y-2 text-left">
-          <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+          <label htmlFor="confirmPassword" className="auth-label">
             {t("confirmPasswordLabel")}
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 auth-field-icon pointer-events-none" />
             <input
               id="confirmPassword"
               type="password"
@@ -128,7 +128,7 @@ function ResetPasswordForm({ locale }: { locale: Locale }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={!tokenFromUrl || Boolean(success)}
-              className="w-full rounded-xl border border-input bg-background pl-9 pr-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/40"
+              className="auth-field auth-field-focus"
               placeholder="••••••••"
             />
           </div>
@@ -136,11 +136,11 @@ function ResetPasswordForm({ locale }: { locale: Locale }) {
 
         <Button
           type="submit"
-          variant="brand"
+          variant="auth"
           className="w-full font-semibold rounded-xl py-2.5"
           disabled={isSubmitting || !tokenFromUrl || Boolean(success)}
         >
-          <KeyRound className="w-4 h-4 mr-2" />
+          <KeyRound className="w-4 h-4 me-2" />
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>

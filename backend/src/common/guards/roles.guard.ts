@@ -76,14 +76,30 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const utilisateur = await this.prisma.utilisateur.findUnique({
-      where: { email: user.email },
+    const jwtEmail = String(user.email ?? '').trim();
+    if (!jwtEmail) {
+      throw new ForbiddenException('Utilisateur non authentifié');
+    }
+
+    const utilisateur = await this.prisma.utilisateur.findFirst({
+      where: { email: { equals: jwtEmail, mode: 'insensitive' } },
       include: { accessRestriction: true },
     });
 
     if (!utilisateur) {
+      this.logger.warn(
+        `Accès refusé: aucun utilisateur DB pour email JWT ${jwtEmail}`,
+      );
       throw new ForbiddenException('Utilisateur non trouvé');
     }
+
+    // Aligner le JWT avec l'utilisateur DB (id, email canonique, rôle)
+    request.user = {
+      ...user,
+      userId: utilisateur.id,
+      email: utilisateur.email,
+      role: String(utilisateur.role),
+    };
 
     if (utilisateur.deletedAt) {
       throw new ForbiddenException('Compte supprimé');

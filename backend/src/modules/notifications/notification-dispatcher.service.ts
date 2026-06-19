@@ -2,9 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { StatutPresence } from '@prisma/client';
 import { EmailService } from '../../common/services/email.service';
 import { NotificationRecipientsService } from './notification-recipients.service';
-import { buildPresenceRecordedEmail } from './templates/presence-recorded.template';
-import { buildNewClassEventEmail } from './templates/new-class-event.template';
-import { buildDailyResumeRecordedEmail } from './templates/daily-resume-recorded.template';
+import {
+  buildPresenceRecordedEmail,
+  buildNewClassEventEmail,
+  buildClassEventCancelledEmail,
+  buildDailyResumeRecordedEmail,
+} from './templates/bilingual-transactional';
 
 /**
  * Point d’entrée unique pour les notifications email métier.
@@ -111,6 +114,38 @@ export class NotificationDispatcherService {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this.logger.error(`notifyNewClassEvent: ${msg}`);
+    }
+  }
+
+  async notifyClassEventCancelled(params: {
+    classeId: string;
+    classeNom: string;
+    titre: string;
+    description: string | null;
+    startAt: Date;
+    endAt: Date;
+  }): Promise<void> {
+    try {
+      const emails = await this.recipients.resolveParentEmailsForClasse(params.classeId);
+      if (emails.length === 0) {
+        this.logger.debug(`Aucun parent pour annulation événement classe=${params.classeId}`);
+        return;
+      }
+
+      const { subject, html, text } = buildClassEventCancelledEmail({
+        titre: params.titre,
+        description: params.description,
+        startAt: params.startAt,
+        endAt: params.endAt,
+        classeNom: params.classeNom,
+      });
+
+      await Promise.all(
+        emails.map((to) => this.mail.sendTransactionalEmail({ to, subject, html, text })),
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.error(`notifyClassEventCancelled: ${msg}`);
     }
   }
 }

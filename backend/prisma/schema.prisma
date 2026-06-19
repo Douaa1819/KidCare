@@ -181,6 +181,7 @@ model Utilisateur {
   archivedAt   DateTime?
   deletedAt    DateTime?
   sessionRevokedAt DateTime?
+  notesAdmin   String?           // Notes internes visibles par les admins
   creeLe       DateTime          @default(now())
   modifieLe    DateTime          @updatedAt
 
@@ -296,6 +297,10 @@ model Inscription {
   enfantId  String?           // Créé lors de l'acceptation
   familleId String?           // Créé lors de l'acceptation
   notes     String?           // Notes admin (raison rejet, etc.)
+  confirmationEmailSentAt DateTime?
+  confirmationEmailError  String?
+  credentialsEmailSentAt  DateTime?
+  credentialsEmailError   String?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @default(now()) @updatedAt
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateParentMeDto, GetPresencesQueryDto, GetEventsQueryDto, CreateParentEnfantDto } from './dto';
 import { EnfantsService } from '../enfants/enfants.service';
@@ -6,6 +6,8 @@ import { validateChildBirthdateForPolicy } from '../../common/child-age-policy';
 
 @Injectable()
 export class ParentService {
+  private readonly logger = new Logger(ParentService.name);
+
   constructor(
     private prisma: PrismaService,
     private enfantsService: EnfantsService,
@@ -33,7 +35,7 @@ export class ParentService {
                 },
                 delegations: true,
                 profilSante: {
-                  include: { allergies: true, intolerances: true, autorisations: true },
+                  include: { allergies: true, intolerances: true },
                 },
               },
             },
@@ -118,129 +120,196 @@ export class ParentService {
     return this.loadUtilisateurWithProfile(utilisateurId);
   }
 
+  private assertUtilisateurId(utilisateurId?: string | null): string {
+    const id = typeof utilisateurId === 'string' ? utilisateurId.trim() : '';
+    if (!id) {
+      throw new BadRequestException('Identifiant utilisateur manquant');
+    }
+    return id;
+  }
+
+  private incompleteProfileResponse(
+    utilisateur: {
+      id: string;
+      email: string;
+      prenom?: string | null;
+      nom?: string | null;
+      langue?: string | null;
+      telephone?: string | null;
+    },
+    message?: string,
+  ) {
+    return {
+      id: utilisateur.id,
+      email: utilisateur.email,
+      prenom: utilisateur.prenom ?? '',
+      nom: utilisateur.nom ?? '',
+      telephone: utilisateur.telephone ?? null,
+      adresse: null,
+      langue: utilisateur.langue ?? 'fr',
+      tuteurId: null,
+      familleId: null,
+      estTuteurPrincipal: false,
+      peutAjouterEnfant: false,
+      profilIncomplet: true,
+      message:
+        message ??
+        "Votre compte parent n'est pas encore lié à un profil famille. Contactez l'administration.",
+      enfants: [],
+      tuteurs: [],
+      enfantsArchives: [],
+    };
+  }
+
+  private mapEnfantForProfile(e: any) {
+    return {
+      id: e.id,
+      prenom: e.prenom,
+      nom: e.nom,
+      dateNaissance: e.dateNaissance,
+      classeId: e.classeId ?? null,
+      classeNom: e.classe?.nom ?? null,
+      classeNiveau: e.classe?.niveau ?? null,
+      classeNbEleves: e.classe?._count?.enfants ?? null,
+      classeEnseignants: (e.classe?.enseignants ?? []).map((ec: any) => ({
+        prenom: ec.enseignant?.utilisateur?.prenom ?? null,
+        nom: ec.enseignant?.utilisateur?.nom ?? null,
+      })),
+      photoUrl: e.photoUrl ?? null,
+      delegations: (e.delegations ?? []).map((d: any) => ({
+        id: d.id,
+        nom: d.nom,
+        telephone: d.telephone,
+        cin: d.cin,
+        relation: d.relation,
+      })),
+      profilSante: e.profilSante
+        ? {
+            id: e.profilSante.id,
+            medecin: e.profilSante.medecin ?? null,
+            notes: e.profilSante.notes ?? null,
+            restrictionAlimentaire: e.profilSante.restrictionAlimentaire ?? null,
+            tags: Array.isArray(e.profilSante.tags) ? e.profilSante.tags : [],
+            allergies: (e.profilSante.allergies ?? []).map((a: any) => ({
+              id: a.id,
+              nom: a.nom,
+              severite: a.severite ?? null,
+              notes: a.notes ?? null,
+            })),
+            intolerances: (e.profilSante.intolerances ?? []).map((i: any) => ({
+              id: i.id,
+              nom: i.nom,
+              notes: i.notes ?? null,
+            })),
+          }
+        : null,
+    };
+  }
+
   /**
    * Récupère les infos du tuteur connecté + ses enfants
    */
   async getMyProfile(utilisateurId: string) {
-    const utilisateur = await this.ensureTuteurLinked(utilisateurId);
+    const id = this.assertUtilisateurId(utilisateurId);
 
-    if (!utilisateur) {
-      throw new NotFoundException('Utilisateur non trouvé');
-    }
+    try {
+      const utilisateur = await this.ensureTuteurLinked(id);
 
-    if (!utilisateur.tuteur) {
+      if (!utilisateur) {
+        this.logger.warn(`GET /parent/me — utilisateur introuvable: ${id}`);
+        throw new NotFoundException('Utilisateur non trouvé');
+      }
+
+      if (!utilisateur.tuteur) {
+        this.logger.warn(
+          `GET /parent/me — compte ${utilisateur.email} sans tuteur lié (tuteurId=${utilisateur.tuteurId ?? 'null'})`,
+        );
+        return this.incompleteProfileResponse(utilisateur);
+      }
+
+      const famille = utilisateur.tuteur.famille;
+      const enfantsSource = famille?.enfants ?? [];
+      const tuteursSource = famille?.tuteurs ?? [];
+
+      let enfantsArchives: Array<{
+        id: string;
+        prenom: string;
+        nom: string;
+        dateNaissance: Date;
+        archivedAt: Date | null;
+        classeId: string | null;
+        classe: { nom: string } | null;
+      }> = [];
+
+      if (utilisateur.tuteur.familleId) {
+        enfantsArchives = await this.prisma.enfant.findMany({
+          where: {
+            familleId: utilisateur.tuteur.familleId,
+            archivedAt: { not: null },
+          },
+          orderBy: { archivedAt: 'desc' },
+          select: {
+            id: true,
+            prenom: true,
+            nom: true,
+            dateNaissance: true,
+            archivedAt: true,
+            classeId: true,
+            classe: { select: { nom: true } },
+          },
+        });
+      }
+
+      this.logger.log(
+        `GET /parent/me OK — ${utilisateur.email}, ${enfantsSource.length} enfant(s) actif(s)`,
+      );
+
       return {
         id: utilisateur.id,
         email: utilisateur.email,
-        prenom: utilisateur.prenom ?? '',
-        nom: utilisateur.nom ?? '',
-        telephone: utilisateur.telephone ?? null,
-        adresse: null,
+        prenom: utilisateur.tuteur.prenom ?? utilisateur.prenom ?? '',
+        nom: utilisateur.tuteur.nom ?? utilisateur.nom ?? '',
+        telephone: utilisateur.tuteur.telephone ?? null,
+        adresse: utilisateur.tuteur.adresse ?? null,
         langue: utilisateur.langue,
-        tuteurId: null,
-        familleId: null,
-        estTuteurPrincipal: false,
-        peutAjouterEnfant: false,
-        profilIncomplet: true,
-        message:
-          'Votre compte parent n\'est pas encore lié à un profil famille. Contactez l\'administration.',
-        enfants: [],
-        tuteurs: [],
-      };
-    }
-
-    const famille = utilisateur.tuteur.famille;
-    const enfantsSource = famille?.enfants ?? [];
-    const tuteursSource = famille?.tuteurs ?? [];
-    const enfantsArchives = await this.prisma.enfant.findMany({
-      where: {
+        tuteurId: utilisateur.tuteur.id,
         familleId: utilisateur.tuteur.familleId,
-        archivedAt: { not: null },
-      },
-      orderBy: { archivedAt: 'desc' },
-      select: {
-        id: true,
-        prenom: true,
-        nom: true,
-        dateNaissance: true,
-        archivedAt: true,
-        classeId: true,
-        classe: { select: { nom: true } },
-      },
-    });
-
-    return {
-      id: utilisateur.id,
-      email: utilisateur.email,
-      prenom: utilisateur.tuteur.prenom,
-      nom: utilisateur.tuteur.nom,
-      telephone: utilisateur.tuteur.telephone,
-      adresse: utilisateur.tuteur.adresse,
-      langue: utilisateur.langue,
-      tuteurId: utilisateur.tuteur.id,
-      familleId: utilisateur.tuteur.familleId,
-      estTuteurPrincipal: utilisateur.tuteur.principal,
-      peutAjouterEnfant:
-        utilisateur.tuteur.principal === true && this.parentSelfAddChildEnabled(),
-      profilIncomplet: false,
-      enfants: enfantsSource.map((e) => ({
-        id: e.id,
-        prenom: e.prenom,
-        nom: e.nom,
-        dateNaissance: e.dateNaissance,
-        classeId: e.classeId,
-        classeNom: (e as any).classe?.nom ?? null,
-        classeNiveau: (e as any).classe?.niveau ?? null,
-        classeNbEleves: (e as any).classe?._count?.enfants ?? null,
-        classeEnseignants: ((e as any).classe?.enseignants ?? []).map((ec: any) => ({
-          prenom: ec.enseignant?.utilisateur?.prenom ?? null,
-          nom: ec.enseignant?.utilisateur?.nom ?? null,
+        estTuteurPrincipal: utilisateur.tuteur.principal === true,
+        peutAjouterEnfant:
+          utilisateur.tuteur.principal === true && this.parentSelfAddChildEnabled(),
+        profilIncomplet: false,
+        enfants: enfantsSource.map((e) => this.mapEnfantForProfile(e)),
+        tuteurs: tuteursSource.map((t) => ({
+          id: t.id,
+          prenom: t.prenom,
+          nom: t.nom,
+          telephone: t.telephone,
+          adresse: t.adresse,
+          email: t.email,
+          lien: t.lien,
         })),
-        photoUrl: (e as any).photoUrl ?? null,
-        delegations: ((e as any).delegations ?? []).map((d: any) => ({
-          id: d.id,
-          nom: d.nom,
-          telephone: d.telephone,
-          cin: d.cin,
-          relation: d.relation,
+        enfantsArchives: enfantsArchives.map((e) => ({
+          id: e.id,
+          prenom: e.prenom,
+          nom: e.nom,
+          dateNaissance: e.dateNaissance,
+          classeId: e.classeId,
+          classeNom: e.classe?.nom ?? null,
+          archivedAt: e.archivedAt,
+          estArchive: true,
+          lectureSeule: true,
         })),
-        profilSante: (e as any).profilSante
-          ? {
-              id: (e as any).profilSante.id,
-              medecin: (e as any).profilSante.medecin ?? null,
-              notes: (e as any).profilSante.notes ?? null,
-              restrictionAlimentaire: (e as any).profilSante.restrictionAlimentaire ?? null,
-              tags: (e as any).profilSante.tags ?? [],
-              allergies: ((e as any).profilSante.allergies ?? []).map((a: any) => ({
-                id: a.id, nom: a.nom, severite: a.severite ?? null, notes: a.notes ?? null,
-              })),
-              intolerances: ((e as any).profilSante.intolerances ?? []).map((i: any) => ({
-                id: i.id, nom: i.nom, notes: i.notes ?? null,
-              })),
-            }
-          : null,
-      })),
-      tuteurs: tuteursSource.map((t) => ({
-        id: t.id,
-        prenom: t.prenom,
-        nom: t.nom,
-        telephone: t.telephone,
-        adresse: t.adresse,
-        email: t.email,
-        lien: t.lien,
-      })),
-      enfantsArchives: enfantsArchives.map((e) => ({
-        id: e.id,
-        prenom: e.prenom,
-        nom: e.nom,
-        dateNaissance: e.dateNaissance,
-        classeId: e.classeId,
-        classeNom: e.classe?.nom ?? null,
-        archivedAt: e.archivedAt,
-        estArchive: true,
-        lectureSeule: true,
-      })),
-    };
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(
+        `GET /parent/me échec pour utilisateur ${id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
   }
 
   /**
@@ -373,7 +442,9 @@ export class ParentService {
       throw new NotFoundException('Tuteur non trouvé');
     }
 
-    const enfantBelongsToTuteur = utilisateur.tuteur.famille.enfants.some((e) => e.id === enfantId);
+    const enfantBelongsToTuteur = (utilisateur.tuteur.famille?.enfants ?? []).some(
+      (e) => e.id === enfantId,
+    );
     if (!enfantBelongsToTuteur) {
       throw new ForbiddenException('Cet enfant ne vous appartient pas');
     }
@@ -451,10 +522,11 @@ export class ParentService {
     });
 
     if (!utilisateur?.tuteur) {
-      throw new NotFoundException('Tuteur non trouvé');
+      return { empty: true as const, requestedDate: date?.trim() ?? null };
     }
 
-    const hasChildInClass = utilisateur.tuteur.famille.enfants.some((e) => e.classeId === classeId);
+    const enfants = utilisateur.tuteur.famille?.enfants ?? [];
+    const hasChildInClass = enfants.some((e) => e.classeId === classeId);
     if (!hasChildInClass) {
       throw new ForbiddenException('Vous n\'avez pas d\'enfant dans cette classe');
     }
@@ -527,12 +599,15 @@ export class ParentService {
     });
 
     if (!utilisateur?.tuteur) {
-      throw new NotFoundException('Tuteur non trouvé');
+      return {
+        data: [],
+        pagination: { page: query.page || 1, pageSize: query.pageSize || 20, total: 0, hasNext: false },
+      };
     }
 
-    const classeIds = utilisateur.tuteur.famille.enfants
+    const classeIds = (utilisateur.tuteur.famille?.enfants ?? [])
       .filter((e) => e.classeId)
-      .map((e) => e.classeId);
+      .map((e) => e.classeId as string);
 
     if (classeIds.length === 0) {
       return {
@@ -610,10 +685,15 @@ export class ParentService {
     });
 
     if (!utilisateur?.tuteur) {
-      throw new NotFoundException('Tuteur non trouvé');
+      return {
+        empty: true as const,
+        requestedDate: date ?? null,
+      };
     }
 
-    const hasChildInClass = utilisateur.tuteur.famille.enfants.some((e) => e.classeId === classeId);
+    const hasChildInClass = (utilisateur.tuteur.famille?.enfants ?? []).some(
+      (e) => e.classeId === classeId,
+    );
     if (!hasChildInClass) {
       throw new ForbiddenException('Vous n\'avez pas d\'enfant dans cette classe');
     }
@@ -635,7 +715,10 @@ export class ParentService {
     });
 
     if (!menu) {
-      throw new NotFoundException('Aucun menu publié pour cette date');
+      return {
+        empty: true as const,
+        requestedDate: date ?? null,
+      };
     }
 
     return {
@@ -674,7 +757,9 @@ export class ParentService {
       throw new NotFoundException('Tuteur non trouvé');
     }
 
-    const enfantBelongsToTuteur = utilisateur.tuteur.famille.enfants.some((e) => e.id === enfantId);
+    const enfantBelongsToTuteur = (utilisateur.tuteur.famille?.enfants ?? []).some(
+      (e) => e.id === enfantId,
+    );
     if (!enfantBelongsToTuteur) {
       throw new ForbiddenException('Cet enfant ne vous appartient pas');
     }
@@ -729,7 +814,9 @@ export class ParentService {
       include: { tuteur: { include: { famille: { include: { enfants: { where: { archivedAt: null } } } } } } },
     });
     if (!utilisateur?.tuteur) throw new NotFoundException('Tuteur non trouvé');
-    const ok = utilisateur.tuteur.famille.enfants.some((e) => String(e.id) === String(enfantId));
+    const ok = (utilisateur.tuteur.famille?.enfants ?? []).some(
+      (e) => String(e.id) === String(enfantId),
+    );
     if (!ok) throw new ForbiddenException('Cet enfant ne vous appartient pas');
   }
 

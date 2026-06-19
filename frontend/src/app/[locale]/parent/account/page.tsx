@@ -8,10 +8,11 @@ import { ArrowLeft, KeyRound, Mail, MapPin, Phone, UserRound } from "lucide-reac
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { MenaPhoneInput } from "@/components/ui/mena-phone-input"
 import { apiClient } from "@/lib/api"
 import { Locale } from "@/lib/i18n/config"
 import { toast } from "sonner"
-import { isValidPhone, normalizePhone } from "@/lib/form-validation"
+import { isValidPhone } from "@/lib/form-validation"
 
 export default function ParentAccountPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = use(params)
@@ -150,11 +151,9 @@ export default function ParentAccountPage({ params }: { params: Promise<{ locale
                   <Phone className="h-3.5 w-3.5" aria-hidden />
                   {t("account.phoneLabel")}
                 </p>
-                <Input
-                  inputMode="tel"
+                <MenaPhoneInput
                   value={contactForm.telephone}
-                  onChange={e => setContactForm(prev => ({ ...prev, telephone: normalizePhone(e.target.value) }))}
-                  placeholder="0612345678"
+                  onChange={(telephone) => setContactForm(prev => ({ ...prev, telephone }))}
                   className="h-10"
                 />
               </div>

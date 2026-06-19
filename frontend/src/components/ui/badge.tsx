@@ -8,18 +8,34 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-primary text-primary-foreground",
+        primary:
+          "border-[var(--status-progress-border)] bg-[var(--status-progress-bg)] text-[var(--status-progress-text)]",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-[var(--status-accepted-border)] bg-[var(--status-accepted-bg)] text-[var(--status-accepted-text)]",
+        accent:
+          "border-[var(--status-rejected-border)] bg-[var(--status-rejected-bg)] text-[var(--status-rejected-text)]",
+        review:
+          "border-[var(--status-review-border)] bg-[var(--status-review-bg)] text-[var(--status-review-text)]",
+        progress:
+          "border-[var(--status-progress-border)] bg-[var(--status-progress-bg)] text-[var(--status-progress-text)]",
+        accepted:
+          "border-[var(--status-accepted-border)] bg-[var(--status-accepted-bg)] text-[var(--status-accepted-text)]",
+        rejected:
+          "border-[var(--status-rejected-border)] bg-[var(--status-rejected-bg)] text-[var(--status-rejected-text)]",
+        present:
+          "border-[var(--status-present-border)] bg-[var(--status-present-bg)] text-[var(--status-present-text)]",
+        neutral:
+          "border-[var(--status-neutral-border)] bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)]",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+          "border-transparent bg-destructive text-destructive-foreground",
+        outline: "border-border text-foreground bg-background",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 )
 
 export interface BadgeProps
@@ -27,10 +43,7 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
-  )
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />
 }
 
 export { Badge, badgeVariants }
-

@@ -34,10 +34,8 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
+      // Pas d'Origin = appels serveur-à-serveur (routes API Next.js, health checks, curl)
       if (!origin) {
-        if (isProd) {
-          return callback(new Error('CORS blocked: origin header required'), false);
-        }
         return callback(null, true);
       }
 

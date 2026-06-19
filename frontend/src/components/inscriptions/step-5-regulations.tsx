@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { apiClient } from "@/lib/api"
 import { renderReglementContent } from "@/lib/rich-text"
 
@@ -10,6 +11,7 @@ interface Step5Props {
 }
 
 export default function Step5Regulations({ formData, updateFormData }: Step5Props) {
+  const t = useTranslations("registration.regulations")
   const [reglement, setReglement] = useState<{ contenu: string; version: number } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -20,7 +22,6 @@ export default function Step5Regulations({ formData, updateFormData }: Step5Prop
         const res = await apiClient.getPublicReglement()
         if (!cancelled) setReglement(res.data)
       } catch {
-        // Use default content if fetch fails
         if (!cancelled) setReglement(null)
       } finally {
         if (!cancelled) setLoading(false)
@@ -56,56 +57,62 @@ Je reconnais avoir pris connaissance du règlement intérieur et m'engage à le 
     <div className="space-y-6">
       <div>
         <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground mb-1">
-          <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
           </svg>
-          Règlement intérieur
+          {t("title")}
         </h2>
-        <p className="text-sm text-muted-foreground">Veuillez lire et accepter le règlement intérieur</p>
+        <p className="text-sm text-muted-foreground">{t("readHint")}</p>
         {reglement?.version && (
-          <p className="text-xs text-muted-foreground mt-0.5">Version {reglement.version}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("version", { version: reglement.version })}</p>
         )}
       </div>
 
-      {/* Regulations Content */}
-      <div className="bg-muted/30 border border-border rounded-lg p-6 max-h-96 overflow-y-auto text-sm">
+      <div className="bg-white/60 border border-border rounded-xl p-6 max-h-96 overflow-y-auto text-sm">
         {loading ? (
-          <p className="text-muted-foreground text-center py-8">Chargement du règlement…</p>
+          <p className="text-muted-foreground text-center py-8">{t("loading")}</p>
         ) : (
           <div
             className="space-y-2 text-muted-foreground leading-relaxed"
-            dangerouslySetInnerHTML={{
-              __html: renderReglementContent(content),
-            }}
+            dangerouslySetInnerHTML={{ __html: renderReglementContent(content) }}
           />
         )}
       </div>
 
-      {/* Checkboxes */}
       <div className="space-y-3">
-        <label className="flex items-start gap-3 p-4 rounded-xl border-2 border-border bg-background hover:border-primary/50 transition-colors cursor-pointer">
+        <label
+          className={`flex items-start gap-3 p-4 rounded-xl border-2 bg-white/80 transition-colors cursor-pointer ${
+            formData.regulationsAccepted
+              ? "border-[var(--status-accepted-border)] bg-[var(--status-accepted-bg)]/40"
+              : "border-border hover:border-[var(--status-accepted-border)]/60"
+          }`}
+        >
           <input
             type="checkbox"
             checked={formData.regulationsAccepted}
             onChange={(e) => updateFormData({ regulationsAccepted: e.target.checked })}
-            className="w-5 h-5 rounded mt-0.5 accent-secondary flex-shrink-0"
+            className="w-5 h-5 rounded mt-0.5 shrink-0 accent-[var(--pp-secondary)]"
           />
           <span className="text-sm font-medium text-foreground leading-relaxed">
-            Je reconnais avoir lu et accepté le règlement intérieur de PetitsPas et m&apos;engage à le respecter sans réserve.{" "}
-            <span className="text-red-500">*</span>
+            {t("acceptRegulations")} <span className="text-destructive">*</span>
           </span>
         </label>
 
-        <label className="flex items-start gap-3 p-4 rounded-xl border-2 border-border bg-background hover:border-primary/50 transition-colors cursor-pointer">
+        <label
+          className={`flex items-start gap-3 p-4 rounded-xl border-2 bg-white/80 transition-colors cursor-pointer ${
+            formData.confirmationExacte
+              ? "border-[var(--status-accepted-border)] bg-[var(--status-accepted-bg)]/40"
+              : "border-border hover:border-[var(--status-accepted-border)]/60"
+          }`}
+        >
           <input
             type="checkbox"
             checked={formData.confirmationExacte ?? false}
             onChange={(e) => updateFormData({ confirmationExacte: e.target.checked })}
-            className="w-5 h-5 rounded mt-0.5 accent-secondary flex-shrink-0"
+            className="w-5 h-5 rounded mt-0.5 shrink-0 accent-[var(--pp-secondary)]"
           />
           <span className="text-sm font-medium text-foreground leading-relaxed">
-            Je confirme que toutes les informations renseignées dans ce formulaire sont exactes et complètes.{" "}
-            <span className="text-red-500">*</span>
+            {t("confirmExact")} <span className="text-destructive">*</span>
           </span>
         </label>
       </div>

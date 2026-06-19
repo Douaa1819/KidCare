@@ -407,19 +407,6 @@ export class DailyResumesService {
       },
     });
 
-    const dateYmd = updated.date.toISOString().split('T')[0];
-    void this.notificationDispatcher
-      .notifyDailyResumeSaved({
-        enfantId: updated.enfantId,
-        enfantPrenom: updated.enfant.prenom,
-        enfantNom: updated.enfant.nom,
-        dateYmd,
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        this.logger.error(`Email notification résumé (mise à jour): ${msg}`);
-      });
-
     return this.formatResumeResponse(updated);
   }
 

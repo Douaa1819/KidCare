@@ -103,6 +103,17 @@ export class EventsController {
     return this.eventsService.getEventById(id);
   }
 
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Annuler un événement (notification email aux parents)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Événement annulé',
+  })
+  async cancel(@Param('id') id: string) {
+    return this.eventsService.cancelEvent(id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Modifier un événement' })
   @ApiResponse({

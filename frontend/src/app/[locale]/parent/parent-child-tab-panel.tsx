@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { MenaPhoneInput } from "@/components/ui/mena-phone-input"
 import { Label } from "@/components/ui/label"
 import { Baby, Check, GraduationCap, Pencil, Phone, UserPlus, Users, X } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -130,8 +131,6 @@ export function ParentChildTabPanel({
         return t("ui.delegationPhoneTooShort", { min: DELEGATION_PHONE_MIN_DIGITS })
       case "delegationPhoneTooLong":
         return t("ui.delegationPhoneTooLong", { max: DELEGATION_PHONE_MAX_DIGITS })
-      case "delegationPhoneIntlRequired":
-        return t("ui.delegationPhoneIntlRequired")
       case "delegationPhoneInvalid":
         return t("ui.delegationPhoneInvalid")
       default:
@@ -259,14 +258,11 @@ export function ParentChildTabPanel({
                     <Label htmlFor={`d-tel-${person.id}`} className="text-xs text-muted-foreground">
                       {t("ui.delegationPhoneReq")}
                     </Label>
-                    <Input
+                    <MenaPhoneInput
                       id={`d-tel-${person.id}`}
                       value={delegationForm.telephone}
-                      onChange={e => setDelegationForm(prev => ({ ...prev, telephone: e.target.value }))}
-                      placeholder={t("ui.phPhone")}
-                      inputMode="tel"
-                      autoComplete="tel"
-                      className={cn("h-9 text-sm", showEditError(delegationForm.telephone, Boolean(phoneKeyEdit)) && "border-destructive")}
+                      onChange={(telephone) => setDelegationForm(prev => ({ ...prev, telephone }))}
+                      inputClassName={cn("h-9 text-sm", showEditError(delegationForm.telephone, Boolean(phoneKeyEdit)) && "border-destructive")}
                     />
                     <p className="text-[11px] text-muted-foreground">{t("ui.delegationPhoneHint")}</p>
                     {showEditError(delegationForm.telephone, Boolean(phoneKeyEdit)) && phoneKeyEdit ? (
@@ -427,14 +423,11 @@ export function ParentChildTabPanel({
                 <Label htmlFor="d-new-tel" className="text-xs text-muted-foreground">
                   {t("ui.delegationPhoneReq")}
                 </Label>
-                <Input
+                <MenaPhoneInput
                   id="d-new-tel"
                   value={newDelegationForm.telephone}
-                  onChange={e => setNewDelegationForm(prev => ({ ...prev, telephone: e.target.value }))}
-                  placeholder={t("ui.phPhone")}
-                  inputMode="tel"
-                  autoComplete="tel"
-                  className={cn("h-9 text-sm", showAddError(newDelegationForm.telephone, Boolean(phoneKeyAdd)) && "border-destructive")}
+                  onChange={(telephone) => setNewDelegationForm(prev => ({ ...prev, telephone }))}
+                  inputClassName={cn("h-9 text-sm", showAddError(newDelegationForm.telephone, Boolean(phoneKeyAdd)) && "border-destructive")}
                 />
                 <p className="text-[11px] text-muted-foreground">{t("ui.delegationPhoneHint")}</p>
                 {showAddError(newDelegationForm.telephone, Boolean(phoneKeyAdd)) && phoneKeyAdd ? (

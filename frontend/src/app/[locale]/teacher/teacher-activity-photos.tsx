@@ -220,9 +220,9 @@ export function TeacherActivityPhotosSection({
               <p className="text-sm text-gray-500">{t("activityPhotosEmpty")}</p>
               <Button
                 type="button"
-                variant="outline"
+                variant="info-outline"
                 size="sm"
-                className="mt-3 gap-2 rounded-xl border-sky-300 bg-white text-sky-800 hover:bg-sky-50 hover:text-sky-900 hover:border-sky-400"
+                className="mt-3 gap-2 rounded-xl"
                 onClick={() => setModalOpen(true)}
               >
                 <Camera className="h-4 w-4" aria-hidden />
@@ -286,10 +286,10 @@ export function TeacherActivityPhotosSection({
               />
               <Button
                 type="button"
-                variant="outline"
+                variant="info-outline"
                 size="sm"
                 disabled={uploading}
-                className="h-9 w-full gap-2 rounded-xl border-sky-300 bg-white text-sky-800 hover:bg-sky-50 hover:text-sky-900 hover:border-sky-400"
+                className="h-9 w-full gap-2 rounded-xl"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Camera className="h-4 w-4" aria-hidden />

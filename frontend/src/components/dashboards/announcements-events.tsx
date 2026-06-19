@@ -23,7 +23,7 @@ export function AnnouncementsEvents() {
               <p className="font-medium text-foreground">{event.title}</p>
               <p className="text-xs text-muted-foreground">{event.date}</p>
             </div>
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="sm">
               {event.action}
             </Button>
           </div>

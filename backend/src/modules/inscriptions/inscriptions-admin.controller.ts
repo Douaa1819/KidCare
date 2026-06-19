@@ -115,8 +115,9 @@ export class InscriptionsAdminController {
   async reject(
     @Param('id') id: string,
     @Body() dto: RejectInscriptionDto,
+    @Req() req: any,
   ) {
-    return this.inscriptionsService.rejectInscription(id, dto.raison);
+    return this.inscriptionsService.rejectInscription(id, dto.raison, req);
   }
 
   /**
@@ -133,6 +134,20 @@ export class InscriptionsAdminController {
     @Req() req: any,
   ) {
     return this.inscriptionsService.acceptAndProvisionInscription(id, req.user);
+  }
+
+  @Post(':id/resend-confirmation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Renvoyer l’email de confirmation de candidature' })
+  async resendConfirmation(@Param('id') id: string) {
+    return this.inscriptionsService.resendConfirmationEmail(id);
+  }
+
+  @Post(':id/resend-credentials')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Renvoyer les identifiants parent (nouveau mot de passe temporaire)' })
+  async resendCredentials(@Param('id') id: string) {
+    return this.inscriptionsService.resendCredentialsEmails(id);
   }
 }
 

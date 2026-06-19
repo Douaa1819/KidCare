@@ -263,7 +263,7 @@ export function DailyMessageBlock({ classeId, dateYmd, t }: DailyMessageBlockPro
                     ) : null}
                     <Button
                       type="button"
-                      className="h-9 rounded-xl bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50"
+                      className="h-9 rounded-xl"
                       disabled={readonly || saving || !dirty}
                       onClick={() => void handleSave()}
                     >

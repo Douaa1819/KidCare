@@ -128,17 +128,59 @@ export function formatAgeBound(bound: AgeBound, labels?: { months: string; years
     : `${y} an${y > 1 ? "s" : ""}`
 }
 
+export function computeAgePartsFromBirthdate(value: string): { years: number; months: number } | null {
+  if (!value?.trim()) return null
+  const iso = value.trim().slice(0, 10)
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!match) return null
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+  const birth = new Date(year, month - 1, day, 12, 0, 0, 0)
+  if (Number.isNaN(birth.getTime()) || birth > today) return null
+
+  let years = today.getFullYear() - birth.getFullYear()
+  let months = today.getMonth() - birth.getMonth()
+  if (today.getDate() < birth.getDate()) months -= 1
+  if (months < 0) {
+    years -= 1
+    months += 12
+  }
+
+  return { years: Math.max(0, years), months: Math.max(0, months) }
+}
+
+export function formatAgeParts(years: number, months: number): string {
+  if (years === 0 && months === 0) return "0 mois"
+  if (years === 0) return `${months} mois`
+  const yearLabel = `${years} an${years > 1 ? "s" : ""}`
+  if (months === 0) return yearLabel
+  return `${yearLabel} et ${months} mois`
+}
+
+export function formatAgeFromBirthdate(value: string): string | null {
+  const parts = computeAgePartsFromBirthdate(value)
+  if (!parts) return null
+  return formatAgeParts(parts.years, parts.months)
+}
+
 export function formatAgeFromYears(ageYears: number): string {
+  if (ageYears < 0) return "0 mois"
   if (ageYears < 1) {
     const months = Math.max(0, Math.round(ageYears * 12))
     return `${months} mois`
   }
   const years = Math.floor(ageYears)
   const extraMonths = Math.round((ageYears - years) * 12)
-  if (extraMonths > 0 && years < 2) {
-    return years > 0 ? `${years} an et ${extraMonths} mois` : `${extraMonths} mois`
-  }
-  return `${years} an${years > 1 ? "s" : ""}`
+  const normalizedYears = years + Math.floor(extraMonths / 12)
+  const normalizedMonths = extraMonths % 12
+  return formatAgeParts(normalizedYears, normalizedMonths)
 }
 
 function readBoundFromEnv(

@@ -27,16 +27,16 @@ export function resolveClassVisual(
     return {
       label,
       Icon: Baby,
-      chipClass: "bg-sky-100 text-sky-900 ring-sky-200/80",
-      iconClass: "text-sky-700",
+      chipClass: "bg-[var(--primary-light)] text-[var(--status-progress-text)] ring-[var(--status-progress-border)]/80",
+      iconClass: "text-[var(--status-progress-text)]",
     }
   }
   if (/\bPS\b/.test(key) || key.includes("PETITE SECTION")) {
     return {
       label,
       Icon: Blocks,
-      chipClass: "bg-emerald-50 text-emerald-900 ring-emerald-200/80",
-      iconClass: "text-emerald-700",
+      chipClass: "bg-[var(--status-accepted-bg)] text-[var(--status-accepted-text)] ring-[var(--status-accepted-border)]/80",
+      iconClass: "text-[var(--status-accepted-text)]",
     }
   }
   if (/\bMS\b/.test(key) || key.includes("MOYENNE")) {

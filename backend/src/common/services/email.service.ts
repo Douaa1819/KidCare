@@ -7,156 +7,285 @@ import {
   emailInfoBox,
   emailNoticeBox,
   emailParagraph,
+  emailHeading,
   escapeHtml,
 } from '../email/petitspas-email-layout';
+import {
+  bilingualEmailSubject,
+  wrapBilingualEmail,
+} from '../email/bilingual-email';
 
-/**
- * Service pour envoyer des emails
- * En DEV, affiche les emails dans la console
- * En PROD, utilise un service SMTP réel
- */
+export type EmailSendResult = { sent: boolean; error?: string };
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: any;
-  private isDev: boolean;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor(private configService: ConfigService) {
-    this.isDev = this.configService.get('NODE_ENV') !== 'production';
     this.initializeTransporter();
+  }
+
+  isSmtpConfigured(): boolean {
+    return this.transporter !== null;
   }
 
   private getFrontendBaseUrl(): string {
     return (
       this.configService.get<string>('FRONTEND_URL') ||
-      this.configService.get<string>('appUrl') ||
       this.configService.get<string>('APP_URL') ||
+      this.configService.get<string>('appUrl') ||
       'http://localhost:3001'
     ).replace(/\/$/, '');
   }
 
-  private initializeTransporter() {
-    // Utiliser les variables d'environnement (DEV ou PROD)
-    const smtpHost = this.configService.get('SMTP_HOST');
-    const smtpPort = this.configService.get('SMTP_PORT');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const smtpUser = this.configService.get('SMTP_USER');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const smtpPass = this.configService.get('SMTP_PASS');
+  private getParentLoginUrl(): string {
+    return `${this.getFrontendBaseUrl()}/auth/login-user`;
+  }
 
-    if (smtpHost && smtpPort && smtpUser && smtpPass) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  private getFromAddress(): string {
+    return this.configService.get<string>('SMTP_FROM') || 'noreply@petitspas.com';
+  }
+
+  private initializeTransporter(): void {
+    const smtpHost = this.configService.get<string>('SMTP_HOST');
+    const smtpPort = this.configService.get<string>('SMTP_PORT');
+    const smtpUser = this.configService.get<string>('SMTP_USER');
+    const smtpPass = this.configService.get<string>('SMTP_PASS');
+
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
+      this.logger.warn('SMTP_CONFIG_MISSING — emails non envoyés (SMTP_HOST/PORT/USER/PASS requis)');
+      return;
+    }
+
       this.transporter = nodemailer.createTransport({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         host: smtpHost,
-        port: parseInt(smtpPort),
-        secure: false, // Use TLS (not SSL)
-        auth: {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          user: smtpUser,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          pass: smtpPass,
-        },
+      port: parseInt(smtpPort, 10),
+      secure: false,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    this.logger.log(`SMTP ready — ${smtpHost}:${smtpPort}`);
+  }
+
+  private async deliver(params: {
+    to: string;
+    subject: string;
+    html: string;
+    logTag: 'EMAIL_CONFIRMATION_SENT' | 'EMAIL_CREDENTIALS_SENT' | 'EMAIL_SEND_FAILED' | 'EMAIL_REJECT_SENT' | 'EMAIL_ADMIN_NOTIF_SENT';
+  }): Promise<EmailSendResult> {
+    if (!this.transporter) {
+      this.logger.warn(`SMTP_CONFIG_MISSING — ${params.logTag} skipped for ${params.to}`);
+      return { sent: false, error: 'SMTP_CONFIG_MISSING' };
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: this.getFromAddress(),
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
       });
-      this.logger.log('📧 Service SMTP configuré avec succès');
-      this.logger.log(`📧 Host: ${smtpHost}:${smtpPort}`);
-    } else {
-      this.logger.warn('⚠️ Variables SMTP non configurées - Mode console uniquement');
+      this.logger.log(`${params.logTag} → ${params.to}`);
+      return { sent: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`EMAIL_SEND_FAILED → ${params.to}: ${msg}`);
+      return { sent: false, error: msg };
     }
   }
 
-  /**
-   * Envoyer un email d'invitation à un enseignant/parent
-   */
+  /** Email A — confirmation candidature (formulaire public) */
+  async sendInscriptionConfirmationEmail(params: {
+    email: string;
+    parentName: string;
+    childName: string;
+    applicationId: string;
+    locale?: 'fr' | 'ar';
+  }): Promise<EmailSendResult> {
+    const subject = bilingualEmailSubject(
+      'Confirmation de votre inscription — PetitsPas',
+      'تأكيد طلب التسجيل — PetitsPas',
+    );
+    const html = this.buildInscriptionConfirmationHtml(params);
+    return this.deliver({
+      to: params.email,
+      subject,
+      html,
+      logTag: 'EMAIL_CONFIRMATION_SENT',
+    });
+  }
+
+  /** Email B — identifiants parent après acceptation admin */
+  async sendParentCredentialsEmail(params: {
+    email: string;
+    parentName: string;
+    temporaryPassword: string;
+    locale?: 'fr' | 'ar';
+  }): Promise<EmailSendResult> {
+    const subject = bilingualEmailSubject(
+      'Vos identifiants de connexion — PetitsPas',
+      'بيانات الدخول — PetitsPas',
+    );
+    const loginUrl = this.getParentLoginUrl();
+    const html = this.buildParentCredentialsHtml({
+      parentName: params.parentName,
+      email: params.email,
+      temporaryPassword: params.temporaryPassword,
+      loginUrl,
+      locale: params.locale,
+    });
+    return this.deliver({
+      to: params.email,
+      subject,
+      html,
+      logTag: 'EMAIL_CREDENTIALS_SENT',
+    });
+  }
+
+  /** @deprecated use sendParentCredentialsEmail */
   async sendInvitationEmail(
     email: string,
     prenom: string,
     nom: string,
-    role: string,
+    _role: string,
     tempPassword: string,
   ): Promise<boolean> {
-    try {
-      const subject = `Inscription confirmée - PetitsPas`;
-      const html = this.generateInvitationHtml(
-        prenom,
-        nom,
-        role,
+    const result = await this.sendParentCredentialsEmail({
         email,
-        tempPassword,
-      );
-
-      if (!this.transporter) {
-        // Fallback console (pas de SMTP configuré)
-        this.logger.warn('⚠️ Pas de transporter SMTP - affichage console uniquement');
-        this.logger.log(`To: ${email}`);
-        this.logger.log(`Subject: ${subject}`);
-        this.logger.log(`Prenom: ${prenom} ${nom}`);
-        this.logger.log(`Role: ${role}`);
-        this.logger.log(`HTML preview:\n${html.substring(0, 400)}...`);
-        return true;
-      }
-
-      // Envoi réel via Mailtrap (même en DEV si EMAIL_SEND_IN_DEV=true)
-      await this.transporter.sendMail({
-        from: this.configService.get('SMTP_FROM') || 'noreply@wlw.ma',
-        to: email,
-        subject,
-        html,
-      });
-
-      this.logger.log(`✅ Email d'invitation envoyé à ${email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Erreur envoi email: ${error.message}`);
-      return false;
-    }
+      parentName: `${prenom} ${nom}`.trim() || 'Parent',
+      temporaryPassword: tempPassword,
+    });
+    return result.sent;
   }
 
-  /**
-   * Générer le HTML de l'email d'invitation
-   */
-  private generateInvitationHtml(
-    prenom: string,
-    _nom: string,
-    role: string,
+  /** @deprecated use sendInscriptionConfirmationEmail */
+  async sendConfirmationEmail(
     email: string,
-    tempPassword: string,
-  ): string {
-    const loginUrl = `${this.getFrontendBaseUrl()}/fr`;
-    const roleLabel =
-      role === 'ENSEIGNANT'
-        ? 'enseignant(e)'
-        : role === 'PARENT'
-          ? 'parent'
-          : role === 'ADMIN'
-            ? 'administrateur'
-            : role.toLowerCase();
+    prenom: string,
+    nom: string,
+    enfantPrenom: string,
+    enfantNom?: string,
+    applicationId?: string,
+  ): Promise<boolean> {
+    const childName = enfantNom
+      ? `${enfantPrenom} ${enfantNom}`.trim()
+      : enfantPrenom;
+    const result = await this.sendInscriptionConfirmationEmail({
+      email,
+      parentName: `${prenom} ${nom}`.trim() || 'Parent',
+      childName: childName || 'votre enfant',
+      applicationId: applicationId ?? '',
+    });
+    return result.sent;
+  }
 
-    const inner = `
-      ${emailParagraph(`Bonjour <strong>${escapeHtml(prenom)}</strong>,`)}
-      ${emailParagraph(
-        `Votre inscription en tant que <strong>${escapeHtml(roleLabel)}</strong> sur <strong>PetitsPas</strong> est confirmée.`,
-      )}
-      ${emailParagraph('Voici vos identifiants de connexion :')}
-      ${emailCredentialsBox([
-        { label: 'Email', value: email },
-        { label: 'Mot de passe', value: tempPassword },
-      ])}
-      ${emailNoticeBox('Pensez à modifier votre mot de passe après votre première connexion.')}
+  private buildInscriptionConfirmationHtml(params: {
+    parentName: string;
+    childName: string;
+    applicationId: string;
+    email: string;
+    locale?: 'fr' | 'ar';
+  }): string {
+    const trackingUrlFr = `${this.getFrontendBaseUrl()}/fr/inscriptions`;
+    const trackingUrlAr = `${this.getFrontendBaseUrl()}/ar/inscriptions`;
+    const preferAr = params.locale === 'ar';
+
+    const infoFr = `
+      <p style="margin:0 0 8px;font-size:14px;"><strong>Parent :</strong> ${escapeHtml(params.parentName)}</p>
+      <p style="margin:0 0 8px;font-size:14px;"><strong>Enfant :</strong> ${escapeHtml(params.childName)}</p>
+      <p style="margin:0;font-size:14px;"><strong>Email :</strong> ${escapeHtml(params.email)}</p>
     `;
 
-    return wrapPetitspasEmail({
-      title: 'Bienvenue sur PetitsPas',
-      subtitle: 'Vos identifiants de connexion',
-      innerHtml: inner,
-      locale: 'fr',
-      cta: { href: loginUrl, label: 'Se connecter' },
+    const infoAr = `
+      <p style="margin:0 0 8px;font-size:14px;"><strong>ولي الأمر :</strong> ${escapeHtml(params.parentName)}</p>
+      <p style="margin:0 0 8px;font-size:14px;"><strong>الطفل :</strong> ${escapeHtml(params.childName)}</p>
+      <p style="margin:0;font-size:14px;"><strong>البريد :</strong> ${escapeHtml(params.email)}</p>
+    `;
+
+    const innerFr = `
+      ${emailParagraph(`Bonjour <strong>${escapeHtml(params.parentName)}</strong>,`)}
+      ${emailParagraph(
+        `Nous avons bien reçu votre demande d'inscription pour <strong>${escapeHtml(params.childName)}</strong>.`,
+      )}
+      ${emailNoticeBox('Statut : candidature en cours de traitement')}
+      ${emailInfoBox(infoFr)}
+      ${emailParagraph(
+        "L'équipe PetitsPas va l'examiner et vous recevrez une réponse prochainement.",
+      )}
+      ${emailParagraph('Merci de votre confiance.')}
+    `;
+
+    const innerAr = `
+      ${emailParagraph(`مرحباً <strong>${escapeHtml(params.parentName)}</strong>،`)}
+      ${emailParagraph(
+        `تم استلام طلب تسجيل <strong>${escapeHtml(params.childName)}</strong> بنجاح.`,
+      )}
+      ${emailNoticeBox('الحالة : الطلب قيد المعالجة')}
+      ${emailInfoBox(infoAr)}
+      ${emailParagraph('سيتم مراجعة طلبكم وستتلقون الرد قريباً.')}
+      ${emailParagraph('شكراً لثقتكم.')}
+    `;
+
+    return wrapBilingualEmail({
+      titleFr: 'Confirmation de votre inscription',
+      titleAr: 'تأكيد طلب التسجيل',
+      innerFr,
+      innerAr,
+      cta: {
+        href: preferAr ? trackingUrlAr : trackingUrlFr,
+        label: preferAr ? 'نموذج التسجيل' : 'Formulaire d\'inscription',
+      },
     });
   }
 
-  /**
-   * Email envoyé après réinitialisation MDP par un Super Admin (mot de passe temporaire).
-   */
+  private buildParentCredentialsHtml(params: {
+    parentName: string;
+    email: string;
+    temporaryPassword: string;
+    loginUrl: string;
+    locale?: 'fr' | 'ar';
+  }): string {
+    const preferAr = params.locale === 'ar';
+
+    const innerFr = `
+      ${emailParagraph(`Bonjour <strong>${escapeHtml(params.parentName)}</strong>,`)}
+      ${emailParagraph('Votre compte parent PetitsPas a été créé.')}
+      ${emailParagraph('Voici vos identifiants de connexion :')}
+      ${emailCredentialsBox([
+        { label: 'Email', value: params.email },
+        { label: 'Mot de passe temporaire', value: params.temporaryPassword },
+      ])}
+      ${emailParagraph(
+        `<strong>Lien de connexion :</strong> <a href="${escapeHtml(params.loginUrl)}" style="color:#FF6F61;">${escapeHtml(params.loginUrl)}</a>`,
+      )}
+      ${emailNoticeBox(
+        'Pour votre sécurité, veuillez modifier votre mot de passe après la première connexion.',
+      )}
+    `;
+
+    const innerAr = `
+      ${emailParagraph(`مرحباً <strong>${escapeHtml(params.parentName)}</strong>،`)}
+      ${emailParagraph('تم إنشاء حسابكم الأبوي على PetitsPas.')}
+      ${emailParagraph('إليكم بيانات الدخول :')}
+      ${emailCredentialsBox([
+        { label: 'البريد الإلكتروني', value: params.email },
+        { label: 'كلمة المرور المؤقتة', value: params.temporaryPassword },
+      ])}
+      ${emailParagraph(
+        `<strong>رابط الدخول :</strong> <a href="${escapeHtml(params.loginUrl)}" style="color:#FF6F61;">${escapeHtml(params.loginUrl)}</a>`,
+      )}
+      ${emailNoticeBox('يُرجى تغيير كلمة المرور بعد أول تسجيل دخول.')}
+    `;
+
+    return wrapBilingualEmail({
+      titleFr: 'Vos identifiants de connexion',
+      titleAr: 'بيانات الدخول',
+      innerFr,
+      innerAr,
+      cta: { href: params.loginUrl, label: preferAr ? 'تسجيل الدخول' : 'Se connecter' },
+    });
+  }
+
   async sendAdminPasswordResetEmail(params: {
     email: string;
     prenom: string;
@@ -165,297 +294,257 @@ export class EmailService {
     tempPassword: string;
     locale?: string;
   }): Promise<boolean> {
-    const isAr = params.locale === 'ar';
-    const subject = isAr
-      ? 'إعادة تعيين كلمة المرور — PetitsPas'
-      : 'Réinitialisation de votre mot de passe — PetitsPas';
-    const html = this.generateAdminPasswordResetHtml(
-      params.prenom,
-      params.nom,
-      params.role,
-      params.email,
-      params.tempPassword,
-      isAr,
+    const subject = bilingualEmailSubject(
+      'Réinitialisation de votre mot de passe — PetitsPas',
+      'إعادة تعيين كلمة المرور — PetitsPas',
     );
-
-    try {
-      if (!this.transporter) {
-        this.logger.error(
-          '❌ SMTP non configuré — impossible d’envoyer l’email de réinitialisation MDP',
-        );
-        return false;
-      }
-
-      await this.transporter.sendMail({
-        from: this.configService.get('SMTP_FROM') || 'noreply@wlw.ma',
-        to: params.email,
-        subject,
-        html,
-      });
-
-      this.logger.log(`✅ Email de réinitialisation MDP (admin) envoyé à ${params.email}`);
-      return true;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`❌ Erreur envoi réinitialisation MDP (admin): ${msg}`);
-      return false;
-    }
-  }
-
-  private generateAdminPasswordResetHtml(
-    prenom: string,
-    nom: string,
-    role: string,
-    email: string,
-    tempPassword: string,
-    isAr: boolean,
-  ): string {
-    const loginUrl = `${this.getFrontendBaseUrl()}/${isAr ? 'ar' : 'fr'}`;
-    const locale = isAr ? 'ar' : 'fr';
-    const roleLabel = isAr
-      ? role === 'ENSEIGNANT'
-        ? 'معلّم'
-        : role === 'PARENT'
-          ? 'ولي أمر'
-          : role === 'ADMIN'
-            ? 'مدير'
-            : role.toLowerCase()
-      : role === 'ENSEIGNANT'
+    const loginUrlFr = `${this.getFrontendBaseUrl()}/fr`;
+    const loginUrlAr = `${this.getFrontendBaseUrl()}/ar`;
+    const preferAr = params.locale === 'ar';
+    const roleLabelFr =
+      params.role === 'ENSEIGNANT'
         ? 'enseignant(e)'
-        : role === 'PARENT'
+        : params.role === 'PARENT'
           ? 'parent'
-          : role === 'ADMIN'
+          : params.role === 'ADMIN'
             ? 'administrateur'
-            : role.toLowerCase();
+            : params.role.toLowerCase();
+    const roleLabelAr =
+      params.role === 'ENSEIGNANT'
+        ? 'معلّم(ة)'
+        : params.role === 'PARENT'
+          ? 'ولي أمر'
+          : params.role === 'ADMIN'
+            ? 'مدير'
+            : params.role.toLowerCase();
 
-    const inner = isAr
-      ? `
-      ${emailParagraph(`مرحباً <strong>${escapeHtml(prenom)} ${escapeHtml(nom)}</strong>،`)}
+    const innerFr = `
+      ${emailParagraph(`Bonjour <strong>${escapeHtml(params.prenom)} ${escapeHtml(params.nom)}</strong>,`)}
       ${emailParagraph(
-        'قام أحد مسؤولي المنصة بإعادة تعيين كلمة مرور حسابك على <strong>PetitsPas</strong>.',
+        `Un administrateur a réinitialisé le mot de passe de votre compte <strong>${escapeHtml(roleLabelFr)}</strong>.`,
       )}
-      ${emailParagraph('إليك بيانات الدخول الجديدة:')}
       ${emailCredentialsBox([
-        { label: 'البريد الإلكتروني', value: email },
-        { label: 'كلمة المرور المؤقتة', value: tempPassword },
-      ])}
-      ${emailNoticeBox('يُرجى تغيير كلمة المرور فور تسجيل الدخول.')}
-    `
-      : `
-      ${emailParagraph(`Bonjour <strong>${escapeHtml(prenom)} ${escapeHtml(nom)}</strong>,`)}
-      ${emailParagraph(
-        `Un administrateur de la plateforme a réinitialisé le mot de passe de votre compte <strong>${escapeHtml(roleLabel)}</strong> sur <strong>PetitsPas</strong>.`,
-      )}
-      ${emailParagraph('Voici vos nouveaux identifiants de connexion :')}
-      ${emailCredentialsBox([
-        { label: 'Email', value: email },
-        { label: 'Mot de passe temporaire', value: tempPassword },
+        { label: 'Email', value: params.email },
+        { label: 'Mot de passe temporaire', value: params.tempPassword },
       ])}
       ${emailNoticeBox('Veuillez modifier votre mot de passe dès votre prochaine connexion.')}
     `;
 
-    return wrapPetitspasEmail({
-      title: 'PetitsPas',
-      subtitle: isAr ? 'إعادة تعيين كلمة المرور' : 'Réinitialisation du mot de passe',
-      innerHtml: inner,
-      locale,
-      cta: { href: loginUrl, label: isAr ? 'تسجيل الدخول' : 'Se connecter' },
+    const innerAr = `
+      ${emailParagraph(`مرحباً <strong>${escapeHtml(params.prenom)} ${escapeHtml(params.nom)}</strong>،`)}
+      ${emailParagraph('قام أحد مسؤولي المنصة بإعادة تعيين كلمة مرور حسابك.')}
+      ${emailCredentialsBox([
+        { label: 'البريد الإلكتروني', value: params.email },
+        { label: 'كلمة المرور المؤقتة', value: params.tempPassword },
+      ])}
+      ${emailNoticeBox('يُرجى تغيير كلمة المرور فور تسجيل الدخول.')}
+    `;
+
+    const html = wrapBilingualEmail({
+      titleFr: 'Réinitialisation du mot de passe',
+      titleAr: 'إعادة تعيين كلمة المرور',
+      innerFr,
+      innerAr,
+      cta: { href: preferAr ? loginUrlAr : loginUrlFr, label: preferAr ? 'تسجيل الدخول' : 'Se connecter' },
     });
+
+    const result = await this.deliver({
+      to: params.email,
+      subject,
+      html,
+      logTag: 'EMAIL_CREDENTIALS_SENT',
+    });
+    return result.sent;
   }
 
-  /**
-   * Lien de réinitialisation du mot de passe (comptes actifs sur la plateforme)
-   */
   async sendPasswordResetEmail(params: {
     email: string;
     prenom: string;
     resetUrl: string;
     locale?: string;
   }): Promise<boolean> {
-    const isAr = params.locale === 'ar';
-    const subject = isAr
-      ? 'إعادة تعيين كلمة المرور — PetitsPas'
-      : 'Réinitialisation de votre mot de passe — PetitsPas';
-    const html = this.generatePasswordResetHtml(params.prenom, params.resetUrl, isAr);
-
-    try {
-      if (!this.transporter) {
-        this.logger.warn('⚠️ Pas de transporter SMTP — réinitialisation MDP (log console)');
-        this.logger.log(`To: ${params.email}`);
-        this.logger.log(`Subject: ${subject}`);
-        this.logger.log(`Reset URL: ${params.resetUrl}`);
-        return true;
-      }
-
-      await this.transporter.sendMail({
-        from: this.configService.get('SMTP_FROM') || 'noreply@wlw.ma',
+    const subject = bilingualEmailSubject(
+      'Réinitialisation de votre mot de passe — PetitsPas',
+      'إعادة تعيين كلمة المرور — PetitsPas',
+    );
+    const html = this.generatePasswordResetHtml(params.prenom, params.resetUrl);
+    const result = await this.deliver({
         to: params.email,
         subject,
         html,
-      });
-
-      this.logger.log(`✅ Email de réinitialisation envoyé à ${params.email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Erreur envoi réinitialisation MDP: ${error.message}`);
-      return false;
-    }
-  }
-
-  private generatePasswordResetHtml(prenom: string, resetUrl: string, isAr: boolean): string {
-    const locale = isAr ? 'ar' : 'fr';
-    const subtitle = isAr ? 'إعادة تعيين كلمة المرور' : 'Réinitialisation du mot de passe';
-    const greeting = isAr
-      ? `مرحباً <strong>${escapeHtml(prenom)}</strong>،`
-      : `Bonjour <strong>${escapeHtml(prenom)}</strong>,`;
-    const body = isAr
-      ? 'تلقّينا طلباً لإعادة تعيين كلمة المرور لحسابك على <strong>PetitsPas</strong>.'
-      : 'Nous avons reçu une demande de réinitialisation du mot de passe de votre compte <strong>PetitsPas</strong>.';
-    const ctaLabel = isAr ? 'تعيين كلمة مرور جديدة' : 'Choisir un nouveau mot de passe';
-    const notice = isAr
-      ? 'الرابط صالح لمدة ساعة واحدة. إذا لم تطلب هذا التغيير، تجاهل هذا البريد.'
-      : 'Ce lien est valable 1 heure. Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.';
-
-    const inner = `
-      ${emailParagraph(greeting)}
-      ${emailParagraph(body)}
-      ${emailNoticeBox(notice)}
-    `;
-
-    return wrapPetitspasEmail({
-      title: 'PetitsPas',
-      subtitle,
-      innerHtml: inner,
-      locale,
-      cta: { href: resetUrl, label: ctaLabel },
+      logTag: 'EMAIL_SEND_FAILED',
     });
+    return result.sent;
   }
 
-  /**
-   * Envoyer un email de confirmation d'inscription
-   */
-  async sendConfirmationEmail(
-    email: string,
-    prenom: string,
-    nom: string,
-    enfantPrenom: string,
-    applicationId: string,
-  ): Promise<boolean> {
-    try {
-      const subject = `Confirmation d'inscription - Crèche PetitsPas`;
-      const html = this.generateConfirmationHtml(
-        prenom,
-        nom,
-        enfantPrenom,
-        applicationId,
-        email,
-      );
-
-      if (!this.transporter) {
-        // Fallback console (pas de SMTP configuré)
-        this.logger.warn('⚠️ Pas de transporter SMTP - affichage console uniquement');
-        this.logger.log(`To: ${email}`);
-        this.logger.log(`Subject: ${subject}`);
-        this.logger.log(`Parent: ${prenom} ${nom}`);
-        this.logger.log(`Enfant: ${enfantPrenom}`);
-        this.logger.log(`Application ID: ${applicationId}`);
-        this.logger.log(`HTML preview:\n${html.substring(0, 400)}...`);
-        return true;
-      }
-
-      await this.transporter.sendMail({
-        from: this.configService.get('SMTP_FROM') || 'noreply@wlw.ma',
-        to: email,
-        subject,
-        html,
-      });
-
-      this.logger.log(`✅ Email de confirmation envoyé à ${email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Erreur envoi email de confirmation: ${error.message}`);
-      return false;
-    }
-  }
-
-  /**
-   * Générer le HTML de l'email de confirmation
-   */
-  private generateConfirmationHtml(
-    prenom: string,
-    nom: string,
-    enfantPrenom: string,
-    applicationId: string,
-    email: string,
-  ): string {
-    const trackingUrl = `${this.getFrontendBaseUrl()}/fr/inscriptions`;
-
-    const infoContent = `
-      <p style="margin:0 0 8px;font-size:14px;"><strong>Dossier :</strong> ${escapeHtml(applicationId)}</p>
-      <p style="margin:0 0 8px;font-size:14px;"><strong>Enfant :</strong> ${escapeHtml(enfantPrenom)}</p>
-      <p style="margin:0;font-size:14px;"><strong>Email :</strong> ${escapeHtml(email)}</p>
-    `;
-
-    const inner = `
-      ${emailParagraph(`Bonjour <strong>${escapeHtml(prenom)} ${escapeHtml(nom)}</strong>,`)}
+  private generatePasswordResetHtml(prenom: string, resetUrl: string): string {
+    const innerFr = `
+      ${emailParagraph(`Bonjour <strong>${escapeHtml(prenom)}</strong>,`)}
       ${emailParagraph(
-        `Nous avons bien reçu votre demande d'inscription pour <strong>${escapeHtml(enfantPrenom)}</strong> à PetitsPas.`,
+        'Nous avons reçu une demande de réinitialisation du mot de passe.',
       )}
-      ${emailNoticeBox('Statut : candidature en cours de traitement')}
-      ${emailInfoBox(infoContent)}
-      ${emailParagraph('<strong>Prochaines étapes</strong>')}
-      ${emailParagraph('• Votre dossier est examiné par notre équipe<br/>• Réponse sous 48 à 72 h ouvrées<br/>• En cas d’acceptation, vous recevrez vos identifiants par email')}
-      ${emailParagraph('Merci de votre confiance.')}
+      ${emailNoticeBox(
+        'Ce lien est valable 1 heure. Si vous n’êtes pas à l’origine de cette demande, ignorez cet email.',
+      )}
     `;
 
-    return wrapPetitspasEmail({
-      title: 'Inscription reçue',
-      subtitle: 'Candidature enregistrée',
-      innerHtml: inner,
-      locale: 'fr',
-      cta: { href: trackingUrl, label: 'Voir le formulaire d’inscription' },
+    const innerAr = `
+      ${emailParagraph(`مرحباً <strong>${escapeHtml(prenom)}</strong>،`)}
+      ${emailParagraph('تلقّينا طلباً لإعادة تعيين كلمة المرور.')}
+      ${emailNoticeBox('الرابط صالح لمدة ساعة واحدة. إذا لم تطلبوا هذا التغيير، تجاهلوا هذا البريد.')}
+    `;
+
+    return wrapBilingualEmail({
+      titleFr: 'Réinitialisation du mot de passe',
+      titleAr: 'إعادة تعيين كلمة المرور',
+      innerFr,
+      innerAr,
+      cta: { href: resetUrl, label: 'Choisir un nouveau mot de passe / تعيين كلمة مرور جديدة' },
     });
   }
 
-  /**
-   * Envoyer un email de notification
-   */
-  async sendNotificationEmail(
-    email: string,
-    subject: string,
-    message: string,
-  ): Promise<boolean> {
-    try {
-      if (this.isDev) {
-        this.logger.log(`📧 NOTIFICATION (DEV MODE)`);
-        this.logger.log(`To: ${email}`);
-        this.logger.log(`Subject: ${subject}`);
-        this.logger.log(`Message: ${message}`);
-        return true;
-      }
+  async sendInscriptionRejectedEmail(params: {
+    email: string;
+    parentPrenom: string;
+    parentNom: string;
+    enfantPrenom: string;
+    enfantNom?: string;
+    raison?: string;
+    locale?: 'fr' | 'ar';
+  }): Promise<boolean> {
+    const subject = bilingualEmailSubject(
+      'Décision concernant votre inscription — PetitsPas',
+      'قرار بشأن طلب التسجيل — PetitsPas',
+    );
+    const enfantLabel = params.enfantNom
+      ? `${params.enfantPrenom} ${params.enfantNom}`.trim()
+      : params.enfantPrenom;
 
+    const raisonFr = params.raison?.trim()
+      ? emailParagraph(`<strong>Motif :</strong> ${escapeHtml(params.raison.trim())}`)
+      : '';
+    const raisonAr = params.raison?.trim()
+      ? emailParagraph(`<strong>السبب :</strong> ${escapeHtml(params.raison.trim())}`)
+      : '';
+
+    const innerFr = `
+      ${emailParagraph(`Bonjour <strong>${escapeHtml(params.parentPrenom)} ${escapeHtml(params.parentNom)}</strong>,`)}
+      ${emailParagraph(
+        `Nous vous remercions pour l'intérêt porté à PetitsPas et pour votre demande d'inscription concernant <strong>${escapeHtml(enfantLabel)}</strong>.`,
+      )}
+      ${emailParagraph(
+        'Après examen attentif de votre dossier, nous ne sommes pas en mesure de retenir votre candidature pour le moment.',
+      )}
+      ${raisonFr}
+      ${emailParagraph('Nous vous souhaitons le meilleur pour la suite.')}
+    `;
+
+    const innerAr = `
+      ${emailParagraph(`مرحباً <strong>${escapeHtml(params.parentPrenom)} ${escapeHtml(params.parentNom)}</strong>،`)}
+      ${emailParagraph(
+        `نشكركم على اهتمامكم بـ PetitsPas وعلى طلب التسجيل الخاص بـ <strong>${escapeHtml(enfantLabel)}</strong>.`,
+      )}
+      ${emailParagraph(
+        'بعد دراسة ملفكم، نأسف لإبلاغكم بأننا غير قادرين على قبول الطلب حالياً.',
+      )}
+      ${raisonAr}
+      ${emailParagraph('نتمنى لكم التوفيق.')}
+    `;
+
+    const html = wrapBilingualEmail({
+      titleFr: 'Décision sur votre inscription',
+      titleAr: 'قرار بشأن طلب التسجيل',
+      innerFr,
+      innerAr,
+    });
+
+    const result = await this.deliver({
+      to: params.email,
+      subject,
+      html,
+      logTag: 'EMAIL_REJECT_SENT',
+    });
+    return result.sent;
+  }
+
+  async sendAdminNewInscriptionEmail(params: {
+    adminEmail: string;
+    parentPrenom: string;
+    parentNom: string;
+    enfantPrenom: string;
+    enfantNom: string;
+    parentEmail: string;
+  }): Promise<boolean> {
+    const subject = bilingualEmailSubject(
+      'Nouvelle inscription reçue — PetitsPas',
+      'تسجيل جديد — PetitsPas',
+    );
+
+    const enfantLabel = `${params.enfantPrenom} ${params.enfantNom}`.trim();
+    const parentLabel = `${params.parentPrenom} ${params.parentNom}`.trim();
+    const adminUrl = `${this.getFrontendBaseUrl()}/fr/admin/inscriptions`;
+
+    const infoFr = `
+      <p style="margin:0 0 8px;font-size:14px;"><strong>Parent :</strong> ${escapeHtml(parentLabel)}</p>
+      <p style="margin:0 0 8px;font-size:14px;"><strong>Enfant :</strong> ${escapeHtml(enfantLabel)}</p>
+      <p style="margin:0;font-size:14px;"><strong>Email :</strong> ${escapeHtml(params.parentEmail)}</p>
+    `;
+
+    const infoAr = `
+      <p style="margin:0 0 8px;font-size:14px;"><strong>ولي الأمر :</strong> ${escapeHtml(parentLabel)}</p>
+      <p style="margin:0 0 8px;font-size:14px;"><strong>الطفل :</strong> ${escapeHtml(enfantLabel)}</p>
+      <p style="margin:0;font-size:14px;"><strong>البريد :</strong> ${escapeHtml(params.parentEmail)}</p>
+    `;
+
+    const innerFr = `
+      ${emailHeading('Nouvelle candidature')}
+      ${emailParagraph('Une nouvelle demande d\'inscription a été soumise.')}
+      ${emailInfoBox(infoFr)}
+    `;
+
+    const innerAr = `
+      ${emailHeading('طلب تسجيل جديد')}
+      ${emailParagraph('تم تقديم طلب تسجيل جديد.')}
+      ${emailInfoBox(infoAr)}
+    `;
+
+    const html = wrapBilingualEmail({
+      titleFr: 'Nouvelle inscription',
+      titleAr: 'تسجيل جديد',
+      innerFr,
+      innerAr,
+      cta: { href: adminUrl, label: 'Voir les inscriptions' },
+    });
+
+    const result = await this.deliver({
+      to: params.adminEmail,
+      subject,
+      html,
+      logTag: 'EMAIL_ADMIN_NOTIF_SENT',
+    });
+    return result.sent;
+  }
+
+  async sendNotificationEmail(email: string, subject: string, message: string): Promise<boolean> {
       if (!this.transporter) {
-        this.logger.warn('⚠️ Service SMTP non configuré');
+      this.logger.warn(`SMTP_CONFIG_MISSING — notification skipped for ${email}`);
         return false;
       }
-
+    try {
       await this.transporter.sendMail({
-        from: this.configService.get('SMTP_FROM') || 'noreply@wlw.ma',
+        from: this.getFromAddress(),
         to: email,
         subject,
         text: message,
       });
-
       return true;
     } catch (error) {
-      this.logger.error(`❌ Erreur envoi notification: ${error.message}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`EMAIL_SEND_FAILED → ${email}: ${msg}`);
       return false;
     }
   }
 
-  /**
-   * Email transactionnel HTML (présence, événements, etc.) — même stratégie que l’invitation : SMTP si configuré, sinon log console.
-   */
   async sendTransactionalEmail(params: {
     to: string;
     subject: string;
@@ -463,41 +552,27 @@ export class EmailService {
     text?: string;
   }): Promise<boolean> {
     const enabled = this.configService.get<boolean>('notificationEmailsEnabled');
-    if (enabled === false) {
-      this.logger.debug(
-        `📧 Notification ignorée (NOTIFICATION_EMAILS_ENABLED=false): ${params.subject} → ${params.to}`,
-      );
+    if (enabled === false) return false;
+
+    if (!this.transporter) {
+      this.logger.warn(`SMTP_CONFIG_MISSING — transactional skipped for ${params.to}`);
       return false;
     }
 
     try {
-      const from =
-        (this.configService.get<string>('SMTP_FROM') as string) || 'noreply@wlw.ma';
-
-      if (!this.transporter) {
-        this.logger.warn('⚠️ Pas de transporter SMTP — notification (log console)');
-        this.logger.log(`To: ${params.to}`);
-        this.logger.log(`Subject: ${params.subject}`);
-        this.logger.log(`Text: ${params.text ?? '(html only)'}`);
-        this.logger.log(`HTML preview:\n${params.html.substring(0, 500)}…`);
-        return true;
-      }
-
       await this.transporter.sendMail({
-        from,
+        from: this.getFromAddress(),
         to: params.to,
         subject: params.subject,
         html: params.html,
         text: params.text,
       });
-
-      this.logger.log(`✅ Email transactionnel envoyé à ${params.to} — ${params.subject}`);
+      this.logger.log(`Transactional email sent → ${params.to}`);
       return true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`❌ Erreur email transactionnel: ${msg}`);
+      this.logger.error(`EMAIL_SEND_FAILED → ${params.to}: ${msg}`);
       return false;
     }
   }
 }
-

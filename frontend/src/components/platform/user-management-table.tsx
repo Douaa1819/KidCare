@@ -6,12 +6,14 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MenaPhoneInput } from "@/components/ui/mena-phone-input";
 import { Badge } from "@/components/ui/badge";
 import { SimpleConfirmDialog } from "@/components/ui/simple-confirm-dialog";
 import { PlatformPagination } from "@/components/platform/platform-pagination";
 import { apiClient } from "@/lib/api";
 import { StatusBadge } from "@/components/platform/status-badge";
 import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
+import { ROLE_BADGE_VARIANT } from "@/lib/design/status-badges";
 import {
   AlertTriangle, Archive, KeyRound, Loader2, LogOut, Mail, RotateCcw, Search, UserX,
 } from "lucide-react";
@@ -43,13 +45,6 @@ const PAGE_SIZE = 15;
 
 const actionBtnClass =
   "hover:bg-violet-50 hover:text-violet-900 hover:border-violet-200";
-
-const ROLE_BADGE: Record<string, string> = {
-  SUPER_ADMIN: "bg-purple-100 text-purple-800 border-purple-200",
-  ADMIN: "bg-red-100 text-red-800 border-red-200",
-  ENSEIGNANT: "bg-blue-100 text-blue-800 border-blue-200",
-  PARENT: "bg-green-100 text-green-800 border-green-200",
-};
 
 export function UserManagementTable({
   fixedRole,
@@ -274,7 +269,7 @@ export function UserManagementTable({
       {showForm && allowCreate && (
         <Card className="p-4 grid gap-3 sm:grid-cols-2 border-violet-100">
           <Input placeholder={t("form.email")} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input placeholder={t("form.phone")} value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} />
+          <MenaPhoneInput value={form.telephone} onChange={(telephone) => setForm({ ...form, telephone })} />
           <Input placeholder={t("form.firstName")} value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} />
           <Input placeholder={t("form.lastName")} value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
           {showAllRoles && (
@@ -342,7 +337,7 @@ export function UserManagementTable({
                       </td>
                       {showAllRoles && (
                         <td className="px-4 py-3">
-                          <Badge variant="outline" className={ROLE_BADGE[u.role] ?? "bg-gray-100 text-gray-700"}>
+                          <Badge variant={ROLE_BADGE_VARIANT[u.role] ?? "neutral"}>
                             {roleLabel(u.role)}
                           </Badge>
                         </td>
@@ -364,7 +359,7 @@ export function UserManagementTable({
                             ) : (
                               <>
                                 {u.statut === "ACTIVE" ? (
-                                  <Button size="sm" variant="outline" className="hover:bg-red-50 hover:text-red-700 hover:border-red-200" disabled={busy}
+                                  <Button size="sm" variant="destructive-outline" disabled={busy}
                                     onClick={() => openConfirm("deactivate", u)}>
                                     <UserX className="h-3.5 w-3.5 me-1" /> {t("deactivate")}
                                   </Button>
@@ -374,7 +369,7 @@ export function UserManagementTable({
                                     {t("activate")}
                                   </Button>
                                 )}
-                                <Button size="sm" variant="outline" className="hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200" disabled={busy}
+                                <Button size="sm" variant="warning-outline" disabled={busy}
                                   onClick={() => openConfirm("archive", u)}>
                                   <Archive className="h-3.5 w-3.5 me-1" /> {t("archive")}
                                 </Button>

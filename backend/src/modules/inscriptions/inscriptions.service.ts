@@ -5,10 +5,19 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInscriptionDto, ListInscriptionsQueryDto, UpdateInscriptionStatusDto } from './dto/create-inscription.dto';
 import { EmailService } from '../../common/services/email.service';
+import {
+  extractAllInscriptionParentContacts,
+  extractInscriptionParentContact,
+  extractEnfantFromPayload,
+  auditContextFromRequest,
+  getAdminNotificationEmail,
+} from '../../common/services/inscription-email.helpers';
 import { validateChildBirthdateForPolicy } from '../../common/child-age-policy';
+import { AuditService } from '../platform/audit.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -23,6 +32,8 @@ export class InscriptionsService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private configService: ConfigService,
+    private auditService: AuditService,
   ) {}
 
   /**
@@ -52,44 +63,76 @@ export class InscriptionsService {
         `Inscription créée: applicationId=${inscription.id}, statut=CANDIDATURE`,
       );
 
-      // Envoyer email de confirmation immédiat
-      const parentEmail = payload.tuteurs?.find((t: any) => t.email)?.email || 
-                         payload.mere?.email || 
-                         payload.pere?.email;
-      
-      if (parentEmail) {
-        const parentPrenom = payload.tuteurs?.find((t: any) => t.email)?.prenom || 
-                            payload.mere?.prenom || 
-                            payload.pere?.prenom || '';
-        const parentNom = payload.tuteurs?.find((t: any) => t.email)?.nom || 
-                         payload.mere?.nom || 
-                         payload.pere?.nom || '';
-        const enfantPrenom = payload.enfant?.prenom || '';
+      const contacts = extractAllInscriptionParentContacts(payload);
+      if (contacts.length > 0) {
+        const errors: string[] = [];
+        let sentCount = 0;
 
-        try {
-          await this.emailService.sendConfirmationEmail(
-            parentEmail,
-            parentPrenom,
-            parentNom,
-            enfantPrenom,
-            inscription.id,
-          );
-          this.logger.log(`📧 Email de confirmation envoyé à ${parentEmail}`);
-        } catch (emailError) {
-          this.logger.error(
-            `❌ Erreur envoi email confirmation: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`,
-          );
-          // Ne pas bloquer l'inscription si l'email échoue
+        for (const contact of contacts) {
+          const emailResult = await this.emailService.sendInscriptionConfirmationEmail({
+            email: contact.email,
+            parentName: contact.parentName,
+            childName: contact.enfantFullName,
+            applicationId: inscription.id,
+            locale: contact.locale,
+          });
+          if (emailResult.sent) {
+            sentCount += 1;
+          } else {
+            errors.push(`${contact.email}: ${emailResult.error ?? 'EMAIL_SEND_FAILED'}`);
+          }
         }
+
+        await this.prisma.inscription.update({
+          where: { id: inscription.id },
+          data:
+            errors.length === 0
+              ? {
+                  confirmationEmailSentAt: new Date(),
+                  confirmationEmailError: null,
+                }
+              : {
+                  confirmationEmailError: errors.join('; '),
+                  ...(sentCount > 0 ? { confirmationEmailSentAt: new Date() } : {}),
+                },
+        });
       } else {
-        this.logger.warn('⚠️ Aucun email trouvé dans le payload - pas d\'email de confirmation envoyé');
+        this.logger.warn(
+          `⚠️ Aucun email trouvé dans le payload — pas d'email de confirmation (inscription ${inscription.id})`,
+        );
+        await this.prisma.inscription.update({
+          where: { id: inscription.id },
+          data: { confirmationEmailError: 'NO_PARENT_EMAIL' },
+        });
       }
 
-      // TODO: Déclencher webhook n8n
+      const principal = extractInscriptionParentContact(payload);
+      const enfant = extractEnfantFromPayload(payload);
+      const adminEmail = getAdminNotificationEmail(this.configService);
+      if (adminEmail && principal) {
+        try {
+          await this.emailService.sendAdminNewInscriptionEmail({
+            adminEmail,
+            parentPrenom: principal.prenom,
+            parentNom: principal.nom,
+            enfantPrenom: enfant.prenom,
+            enfantNom: enfant.nom,
+            parentEmail: principal.email,
+          });
+        } catch (adminMailError) {
+          this.logger.error(
+            `❌ Erreur notification admin inscription: ${adminMailError instanceof Error ? adminMailError.message : 'Unknown'}`,
+          );
+        }
+      }
+
+      const updated = await this.prisma.inscription.findUnique({ where: { id: inscription.id } });
 
       return {
         applicationId: inscription.id,
         statut: inscription.statut,
+        confirmationEmailSent: Boolean(updated?.confirmationEmailSentAt),
+        confirmationEmailError: updated?.confirmationEmailError ?? null,
       };
     } catch (error) {
       this.logger.error(
@@ -217,6 +260,15 @@ export class InscriptionsService {
       );
     }
 
+    if (
+      dto.statut === 'ACTIF' &&
+      (!inscription.familleId || !inscription.enfantId)
+    ) {
+      throw new BadRequestException(
+        'Utilisez « Accepter » pour provisionner la famille avant de passer en ACTIF.',
+      );
+    }
+
     const updated = await this.prisma.inscription.update({
       where: { id },
       data: {
@@ -231,7 +283,11 @@ export class InscriptionsService {
   /**
    * Rejeter une inscription
    */
-  async rejectInscription(id: string, raison: string) {
+  async rejectInscription(
+    id: string,
+    raison?: string,
+    req?: { user?: { userId?: string; email?: string }; ip?: string; headers?: Record<string, string | string[] | undefined> },
+  ) {
     const inscription = await this.prisma.inscription.findUnique({
       where: { id },
     });
@@ -254,7 +310,46 @@ export class InscriptionsService {
       },
     });
 
-    return this.formatInscriptionResponse(updated);
+    const auditCtx = auditContextFromRequest(req);
+    await this.auditService.log('inscription.refused', auditCtx, 'Inscription', id, {
+      raison: raison?.trim() || undefined,
+    });
+
+    const payload = inscription.payload as Record<string, unknown>;
+    const parent = extractInscriptionParentContact(payload);
+    const enfant = extractEnfantFromPayload(payload);
+    let emailSent = false;
+
+    if (parent) {
+      emailSent = await this.emailService.sendInscriptionRejectedEmail({
+        email: parent.email,
+        parentPrenom: parent.prenom,
+        parentNom: parent.nom,
+        enfantPrenom: enfant.prenom,
+        enfantNom: enfant.nom,
+        raison: raison?.trim() || undefined,
+        locale: parent.locale,
+      });
+
+      await this.auditService.log(
+        emailSent ? 'email.sent' : 'email.failed',
+        auditCtx,
+        'Inscription',
+        id,
+        { type: 'inscription.rejected', to: parent.email },
+      );
+    } else {
+      this.logger.warn(`Refus inscription ${id} : aucun email parent dans le payload`);
+      await this.auditService.log('email.failed', auditCtx, 'Inscription', id, {
+        type: 'inscription.rejected',
+        reason: 'no_parent_email',
+      });
+    }
+
+    return {
+      ...this.formatInscriptionResponse(updated),
+      emailSent: parent ? emailSent : false,
+    };
   }
 
   /**
@@ -272,6 +367,43 @@ export class InscriptionsService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  /** Normalise mere/pere (legacy) et tuteurs[] pour le provisionnement. */
+  private extractTuteursFromPayload(payload: Record<string, unknown>): any[] {
+    const raw = payload?.tuteurs;
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw;
+    }
+
+    const legacy: any[] = [];
+    const mere = payload?.mere as Record<string, unknown> | undefined;
+    const pere = payload?.pere as Record<string, unknown> | undefined;
+
+    if (mere && (mere.email || mere.prenom || mere.nom)) {
+      legacy.push({
+        lien: 'Mere',
+        prenom: mere.prenom,
+        nom: mere.nom,
+        email: mere.email,
+        telephone: mere.telephone,
+        adresse: mere.adresse,
+        principal: true,
+      });
+    }
+    if (pere && (pere.email || pere.prenom || pere.nom)) {
+      legacy.push({
+        lien: 'Pere',
+        prenom: pere.prenom,
+        nom: pere.nom,
+        email: pere.email,
+        telephone: pere.telephone,
+        adresse: pere.adresse,
+        principal: legacy.length === 0,
+      });
+    }
+
+    return legacy;
   }
 
   /**
@@ -293,18 +425,37 @@ export class InscriptionsService {
       );
     }
 
-    const payload = inscription.payload as any;
+    const rawPayload = inscription.payload as any;
+    const tuteursPayload = this.extractTuteursFromPayload(rawPayload);
+    const payload = { ...rawPayload, tuteurs: tuteursPayload } as any;
 
-    // Valider qu'il y a au moins un tuteur avec email
-    const tuteurAvecEmail = payload.tuteurs?.find((t: any) => t.email);
+    const tuteurAvecEmail = tuteursPayload.find((t) => t.email);
     if (!tuteurAvecEmail) {
       throw new BadRequestException('Aucun tuteur avec email trouvé dans le payload');
     }
 
+    if (!payload.enfant?.prenom || !payload.enfant?.nom) {
+      throw new BadRequestException('Informations enfant incomplètes dans le dossier');
+    }
+
+    const hasPrincipal = tuteursPayload.some((t) => Boolean(t.principal));
+    if (!hasPrincipal && tuteursPayload.length > 0) {
+      tuteursPayload[0].principal = true;
+    }
+
+    this.logger.log(
+      `Acceptation inscription ${id} — ${tuteursPayload.length} tuteur(s), enfant ${payload.enfant.prenom} ${payload.enfant.nom}`,
+    );
+
+    const classeIdSouhaitee =
+      typeof payload.classeIdSouhaitee === 'string'
+        ? payload.classeIdSouhaitee.trim()
+        : '';
+
     // Transaction atomique
     const result = await this.prisma.$transaction(async (tx) => {
       // 1. Créer ou récupérer la famille
-      const emailPrincipal = tuteurAvecEmail.email;
+      const emailPrincipal = this.normalizeEmail(String(tuteurAvecEmail.email));
       const famille = await tx.famille.upsert({
         where: { emailPrincipal },
         update: {},
@@ -319,10 +470,10 @@ export class InscriptionsService {
       const tuteurs: any[] = [];
       const emailsToInvite: Array<{ email: string; prenom: string; nom: string; tuteurId: string }> = [];
 
-      for (const tuteurData of payload.tuteurs || []) {
+      for (const tuteurData of tuteursPayload) {
         if (!tuteurData.email) continue;
 
-        const tuteurEmail = this.normalizeEmail(tuteurData.email);
+        const tuteurEmail = this.normalizeEmail(String(tuteurData.email));
         let tuteur = await tx.tuteur.findFirst({
           where: { email: { equals: tuteurEmail, mode: 'insensitive' } },
         });
@@ -375,17 +526,34 @@ export class InscriptionsService {
         ...(payload.sante?.tagsIntolerances ?? []),
         ...(payload.sante?.tags ?? []),
       ];
+
+      const enfantCreateData: any = {
+        familleId: famille.id,
+        prenom: payload.enfant.prenom,
+        nom: payload.enfant.nom,
+        dateNaissance: new Date(payload.enfant.dateNaissance),
+        genre: payload.enfant.genre ?? null,
+        photoUrl: payload.enfant.photoUrl ?? null,
+        intolerances: payload.sante?.tagsIntolerances ?? [],
+        sansRestriction: payload.restrictions?.sansRestriction ?? false,
+      };
+
+      if (classeIdSouhaitee) {
+        const classe = await tx.classe.findFirst({
+          where: { id: classeIdSouhaitee, active: true },
+          select: { id: true },
+        });
+        if (classe) {
+          enfantCreateData.classeId = classe.id;
+        } else {
+          this.logger.warn(
+            `Inscription ${id} : classe souhaitée ${classeIdSouhaitee} introuvable ou inactive`,
+          );
+        }
+      }
+
       const enfant = await tx.enfant.create({
-        data: {
-          familleId: famille.id,
-          prenom: payload.enfant.prenom,
-          nom: payload.enfant.nom,
-          dateNaissance: new Date(payload.enfant.dateNaissance),
-          genre: payload.enfant.genre,
-          photoUrl: payload.enfant.photoUrl,
-          intolerances: payload.sante?.tagsIntolerances ?? [],
-          sansRestriction: payload.restrictions?.sansRestriction ?? false,
-        },
+        data: enfantCreateData,
       });
 
       // 3b. Créer les délégations (personnes autorisées à récupérer l'enfant)
@@ -494,44 +662,222 @@ export class InscriptionsService {
       };
     });
 
-    // Envoyer les emails uniquement après commit de la transaction
-    const invitedTuteurs: any[] = [];
+    if (result.provisionedAccounts.length === 0) {
+      this.logger.error(
+        `Inscription ${id} provisionnée sans compte parent — emails/noms tuteurs manquants ?`,
+      );
+      throw new BadRequestException(
+        'Aucun compte parent créé. Vérifiez que chaque tuteur a un email, un prénom et un nom.',
+      );
+    }
+
     for (const account of result.provisionedAccounts) {
-      try {
-        await this.emailService.sendInvitationEmail(
-          account.email,
-          account.prenom,
-          account.nom,
-          'PARENT',
-          account.tempPasswordPlain,
-        );
+      const verified = await this.prisma.utilisateur.findUnique({
+        where: { id: account.utilisateurId },
+        select: {
+          id: true,
+          tuteurId: true,
+          role: true,
+          tuteur: {
+            select: {
+              familleId: true,
+              famille: { select: { enfants: { where: { archivedAt: null }, select: { id: true } } } },
+            },
+          },
+        },
+      });
 
-        invitedTuteurs.push({
-          tuteurId: account.tuteurId,
-          email: account.email,
-          utilisateurId: account.utilisateurId,
-          emailSent: true,
-        });
-
-        this.logger.log(`Parent invité et email envoyé: ${account.email}`);
-      } catch (error) {
+      if (
+        !verified?.tuteurId ||
+        verified.role !== 'PARENT' ||
+        !verified.tuteur?.famille?.enfants?.length
+      ) {
         this.logger.error(
-          `Erreur envoi email parent ${account.email}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Inscription ${id} : compte parent ${account.email} incomplet après transaction (tuteurId=${verified?.tuteurId ?? 'null'}, enfants=${verified?.tuteur?.famille?.enfants?.length ?? 0})`,
         );
-        invitedTuteurs.push({
-          tuteurId: account.tuteurId,
-          email: account.email,
-          utilisateurId: account.utilisateurId,
-          emailSent: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
+        throw new BadRequestException(
+          `Provisionnement incomplet pour ${account.email}. Contactez le support.`,
+        );
       }
     }
+
+    this.logger.log(
+      `Inscription ${id} : ${result.provisionedAccounts.length} compte(s) parent vérifié(s), enfant ${result.enfantId}`,
+    );
+
+    // Envoyer les emails uniquement après commit et vérification
+    const invitedTuteurs: any[] = [];
+    const credentialErrors: string[] = [];
+
+    for (const account of result.provisionedAccounts) {
+      const emailResult = await this.emailService.sendParentCredentialsEmail({
+        email: account.email,
+        parentName: `${account.prenom} ${account.nom}`.trim() || 'Parent',
+        temporaryPassword: account.tempPasswordPlain,
+      });
+
+      invitedTuteurs.push({
+        tuteurId: account.tuteurId,
+        email: account.email,
+        utilisateurId: account.utilisateurId,
+        emailSent: emailResult.sent,
+        error: emailResult.error,
+      });
+
+      if (!emailResult.sent) {
+        credentialErrors.push(`${account.email}: ${emailResult.error ?? 'EMAIL_SEND_FAILED'}`);
+      }
+    }
+
+    await this.prisma.inscription.update({
+      where: { id },
+      data:
+        credentialErrors.length === 0 && result.provisionedAccounts.length > 0
+          ? {
+              credentialsEmailSentAt: new Date(),
+              credentialsEmailError: null,
+            }
+          : {
+              credentialsEmailError:
+                credentialErrors.join('; ') || 'NO_PARENT_ACCOUNTS',
+            },
+    });
 
     this.logger.log(`Inscription ${id} acceptée et provisionnée`);
     return {
       ...result,
       invitedTuteurs,
+      credentialsEmailSent: credentialErrors.length === 0 && result.provisionedAccounts.length > 0,
+      credentialsEmailError: credentialErrors.length ? credentialErrors.join('; ') : null,
+    };
+  }
+
+  /**
+   * Renvoyer l'email de confirmation de candidature
+   */
+  async resendConfirmationEmail(id: string) {
+    const inscription = await this.prisma.inscription.findUnique({ where: { id } });
+    if (!inscription) {
+      throw new NotFoundException(`Inscription ${id} non trouvée`);
+    }
+
+    const payload = inscription.payload as Record<string, unknown>;
+    const contacts = extractAllInscriptionParentContacts(payload);
+    if (contacts.length === 0) {
+      throw new BadRequestException('Aucun email parent trouvé dans le dossier');
+    }
+
+    const errors: string[] = [];
+    let sentCount = 0;
+
+    for (const contact of contacts) {
+      const emailResult = await this.emailService.sendInscriptionConfirmationEmail({
+        email: contact.email,
+        parentName: contact.parentName,
+        childName: contact.enfantFullName,
+        applicationId: inscription.id,
+      });
+      if (emailResult.sent) {
+        sentCount += 1;
+      } else {
+        errors.push(`${contact.email}: ${emailResult.error ?? 'EMAIL_SEND_FAILED'}`);
+      }
+    }
+
+    const updated = await this.prisma.inscription.update({
+      where: { id },
+      data:
+        errors.length === 0
+          ? { confirmationEmailSentAt: new Date(), confirmationEmailError: null }
+          : {
+              confirmationEmailError: errors.join('; '),
+              ...(sentCount > 0 ? { confirmationEmailSentAt: new Date() } : {}),
+            },
+    });
+
+    return {
+      sent: errors.length === 0,
+      sentCount,
+      total: contacts.length,
+      error: errors.length ? errors.join('; ') : null,
+      inscription: this.formatInscriptionResponse(updated),
+    };
+  }
+
+  /**
+   * Renvoyer les identifiants parent (génère un nouveau mot de passe temporaire)
+   */
+  async resendCredentialsEmails(id: string) {
+    const inscription = await this.prisma.inscription.findUnique({ where: { id } });
+    if (!inscription) {
+      throw new NotFoundException(`Inscription ${id} non trouvée`);
+    }
+    if (inscription.statut !== 'ACTIF') {
+      throw new BadRequestException(
+        'Les identifiants ne peuvent être renvoyés que pour une inscription acceptée (ACTIF)',
+      );
+    }
+    if (!inscription.familleId) {
+      throw new BadRequestException('Famille non provisionnée pour cette inscription');
+    }
+
+    const parents = await this.prisma.utilisateur.findMany({
+      where: {
+        role: 'PARENT',
+        tuteur: { familleId: inscription.familleId },
+        archivedAt: null,
+        deletedAt: null,
+      },
+      select: { id: true, email: true, prenom: true, nom: true },
+    });
+
+    if (parents.length === 0) {
+      throw new BadRequestException('Aucun compte parent trouvé pour cette inscription');
+    }
+
+    const errors: string[] = [];
+    let sentCount = 0;
+
+    for (const parent of parents) {
+      const tempPasswordPlain = this.generateTempPassword();
+      const tempPasswordHashed = await bcrypt.hash(tempPasswordPlain, 10);
+
+      await this.prisma.utilisateur.update({
+        where: { id: parent.id },
+        data: {
+          tempPassword: tempPasswordHashed,
+          statut: 'INVITED',
+          inviteLe: new Date(),
+        },
+      });
+
+      const emailResult = await this.emailService.sendParentCredentialsEmail({
+        email: parent.email,
+        parentName: `${parent.prenom} ${parent.nom}`.trim() || 'Parent',
+        temporaryPassword: tempPasswordPlain,
+      });
+
+      if (emailResult.sent) {
+        sentCount += 1;
+      } else {
+        errors.push(`${parent.email}: ${emailResult.error ?? 'EMAIL_SEND_FAILED'}`);
+      }
+    }
+
+    const updated = await this.prisma.inscription.update({
+      where: { id },
+      data:
+        errors.length === 0
+          ? { credentialsEmailSentAt: new Date(), credentialsEmailError: null }
+          : { credentialsEmailError: errors.join('; ') },
+    });
+
+    return {
+      sent: errors.length === 0,
+      sentCount,
+      total: parents.length,
+      error: errors.length ? errors.join('; ') : null,
+      inscription: this.formatInscriptionResponse(updated),
     };
   }
 
@@ -594,6 +940,10 @@ export class InscriptionsService {
       notes: inscription.notes,
       familleId: inscription.familleId,
       enfantId: inscription.enfantId,
+      confirmationEmailSentAt: inscription.confirmationEmailSentAt,
+      confirmationEmailError: inscription.confirmationEmailError,
+      credentialsEmailSentAt: inscription.credentialsEmailSentAt,
+      credentialsEmailError: inscription.credentialsEmailError,
     };
   }
 }

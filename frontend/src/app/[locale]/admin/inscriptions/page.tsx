@@ -1,20 +1,39 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Eye } from "lucide-react";
+import {
+  Search,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  Baby,
+  User,
+  Mail,
+  CalendarDays,
+  ClipboardList,
+  LayoutGrid,
+  Clock,
+  Loader2,
+  Inbox,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Locale } from "@/lib/i18n/config";
 import { withLocalePath } from "@/lib/i18n/locale-path";
-import { SidebarNew } from "@/components/layout/sidebar-new"
+import { SidebarNew } from "@/components/layout/sidebar-new";
 import { AdminMainContent } from "@/components/layout/sidebar-context";
 import { apiClient } from "@/lib/api";
-import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage, notifyError, notifySuccess } from "@/lib/feedback";
+import { inscriptionStatusBadgeVariant } from "@/lib/design/status-badges";
+import { AdminListPagination } from "@/components/admin/admin-list-pagination";
+import { RejectInscriptionDialog } from "@/components/admin/reject-inscription-dialog";
+
+const PAGE_SIZE = 12;
 
 type InscriptionItem = {
   id: string;
@@ -25,19 +44,23 @@ type InscriptionItem = {
   createdAt: string;
 };
 
-function badgeClassForStatus(code: InscriptionItem["statutCode"]): string {
-  switch (code) {
-    case "ACTIF":
-      return "bg-green-100 text-green-700";
-    case "CANDIDATURE":
-      return "bg-yellow-100 text-yellow-700";
-    case "EN_COURS":
-      return "bg-blue-100 text-blue-700";
-    case "REJETEE":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-gray-100 text-gray-700";
-  }
+type StatusFilter = InscriptionItem["statutCode"] | null;
+
+const FILTER_OPTIONS: {
+  value: StatusFilter;
+  labelKey: "all" | "review" | "inProgress" | "accepted" | "rejected";
+  icon: typeof LayoutGrid;
+}[] = [
+  { value: null, labelKey: "all", icon: LayoutGrid },
+  { value: "CANDIDATURE", labelKey: "review", icon: Clock },
+  { value: "EN_COURS", labelKey: "inProgress", icon: Loader2 },
+  { value: "ACTIF", labelKey: "accepted", icon: CheckCircle2 },
+  { value: "REJETEE", labelKey: "rejected", icon: XCircle },
+];
+
+function childInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed[0]!.toUpperCase() : "?";
 }
 
 export default function InscriptionsPage({ params }: { params: Promise<{ locale: Locale }> }) {
@@ -48,18 +71,16 @@ export default function InscriptionsPage({ params }: { params: Promise<{ locale:
   const [inscriptions, setInscriptions] = useState<InscriptionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<InscriptionItem["statutCode"] | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
+  const [page, setPage] = useState(1);
   const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
   const [rejectPending, setRejectPending] = useState(false);
 
   const handleAccept = async (id: string) => {
     try {
       await apiClient.acceptAdminInscription(id);
       setInscriptions((prev) =>
-        prev.map((insc) =>
-          insc.id === id ? { ...insc, statutCode: "ACTIF" } : insc,
-        ),
+        prev.map((insc) => (insc.id === id ? { ...insc, statutCode: "ACTIF" } : insc)),
       );
       notifySuccess("Inscription acceptée.");
     } catch (err) {
@@ -68,20 +89,22 @@ export default function InscriptionsPage({ params }: { params: Promise<{ locale:
     }
   };
 
-  const submitReject = async () => {
-    if (!rejectTargetId) return;
+  const handleReject = async (id: string, raison?: string) => {
     try {
       setRejectPending(true);
-      const raison = rejectReason.trim() || undefined;
-      await apiClient.rejectAdminInscription(rejectTargetId, raison);
+      const res = await apiClient.rejectAdminInscription(id, raison);
+      const emailSent = (res.data as { emailSent?: boolean })?.emailSent;
       setInscriptions((prev) =>
-        prev.map((insc) =>
-          insc.id === rejectTargetId ? { ...insc, statutCode: "REJETEE" } : insc,
-        ),
+        prev.map((insc) => (insc.id === id ? { ...insc, statutCode: "REJETEE" } : insc)),
       );
-      notifySuccess("Inscription refusée.");
       setRejectTargetId(null);
-      setRejectReason("");
+      if (emailSent === false) {
+        notifySuccess(t("rejectDialog.emailFailed"));
+      } else if (raison?.trim()) {
+        notifySuccess(t("rejectDialog.emailWithReason"));
+      } else {
+        notifySuccess(t("rejectDialog.emailWithoutReason"));
+      }
     } catch (err) {
       console.error("[Admin/Inscriptions] Error rejecting inscription", err);
       notifyError(getApiErrorMessage(err, t("errors.reject")));
@@ -108,39 +131,30 @@ export default function InscriptionsPage({ params }: { params: Promise<{ locale:
           const parentName = firstParent?.nom ?? "—";
           const email = firstParent?.email ?? "—";
 
-          const statut: InscriptionItem["statutCode"] = insc.statut ?? null;
-
           return {
             id: insc.id,
             childName,
             parentName,
             email,
-            statutCode: statut,
+            statutCode: insc.statut ?? null,
             createdAt: insc.createdAt,
           };
         });
 
-        if (!cancelled) {
-          setInscriptions(mapped);
-        }
+        if (!cancelled) setInscriptions(mapped);
       } catch (err) {
         console.error("[Admin/Inscriptions] Error loading inscriptions", err);
-        if (!cancelled) {
-          setError(t("errors.load"));
-        }
+        if (!cancelled) setError(t("errors.load"));
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchInscriptions();
-
     return () => {
       cancelled = true;
     };
-  }, [currentLocale]);
+  }, [currentLocale, t]);
 
   const labelForStatus = (code: InscriptionItem["statutCode"]) => {
     if (!code) return t("status.UNKNOWN");
@@ -155,193 +169,250 @@ export default function InscriptionsPage({ params }: { params: Promise<{ locale:
     return t(key);
   };
 
+  const statusCounts = useMemo(() => {
+    const counts = { all: inscriptions.length, CANDIDATURE: 0, EN_COURS: 0, ACTIF: 0, REJETEE: 0 };
+    for (const insc of inscriptions) {
+      if (insc.statutCode && insc.statutCode in counts) {
+        counts[insc.statutCode as keyof typeof counts] += 1;
+      }
+    }
+    return counts;
+  }, [inscriptions]);
+
   const filtered = inscriptions.filter((insc) => {
+    const q = search.toLowerCase();
     const matchesSearch =
-      insc.childName.toLowerCase().includes(search.toLowerCase()) ||
-      insc.parentName.toLowerCase().includes(search.toLowerCase()) ||
-      insc.email.toLowerCase().includes(search.toLowerCase());
-
+      insc.childName.toLowerCase().includes(q) ||
+      insc.parentName.toLowerCase().includes(q) ||
+      insc.email.toLowerCase().includes(q);
     const matchesStatus = statusFilter ? insc.statutCode === statusFilter : true;
-
     return matchesSearch && matchesStatus;
   });
+
+  const pendingCount = statusCounts.CANDIDATURE + statusCounts.EN_COURS;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <SidebarNew currentLocale={currentLocale} />
 
       <AdminMainContent className="p-4 md:p-8 pt-16 md:pt-8">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">{t("title")}</h1>
-            <p className="text-muted-foreground">{t("countLabel", { count: inscriptions.length })}</p>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div className="relative md:w-72">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder={t("searchPlaceholder")}
-                className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs md:text-sm">
-              <Button
-                variant={statusFilter === null ? "default" : "outline"}
-                size="sm"
-                className="rounded-full px-4"
-                onClick={() => setStatusFilter(null)}
-              >
-                {t("filters.all")}
-              </Button>
-              <Button
-                variant={statusFilter === "CANDIDATURE" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full px-4"
-                onClick={() => setStatusFilter("CANDIDATURE")}
-              >
-                {t("filters.review")}
-              </Button>
-              <Button
-                variant={statusFilter === "EN_COURS" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full px-4"
-                onClick={() => setStatusFilter("EN_COURS")}
-              >
-                {t("filters.inProgress")}
-              </Button>
-              <Button
-                variant={statusFilter === "ACTIF" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full px-4"
-                onClick={() => setStatusFilter("ACTIF")}
-              >
-                {t("filters.accepted")}
-              </Button>
-              <Button
-                variant={statusFilter === "REJETEE" ? "default" : "outline"}
-                size="sm"
-                className="rounded-full px-4"
-                onClick={() => setStatusFilter("REJETEE")}
-              >
-                {t("filters.rejected")}
-              </Button>
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--primary-light)] border border-[var(--status-progress-border)] flex items-center justify-center shrink-0 relative overflow-hidden">
+                <span className="absolute inset-y-0 start-0 w-1 bg-[var(--pp-secondary)]" aria-hidden />
+                <ClipboardList className="w-6 h-6 text-[var(--status-progress-text)]" aria-hidden />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">{t("title")}</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {t("countLabel", { count: inscriptions.length })}
+                  {pendingCount > 0 ? (
+                    <span className="ms-2 inline-flex items-center gap-1 text-[var(--status-review-text)] font-medium">
+                      <Clock className="w-3.5 h-3.5" aria-hidden />
+                      {pendingCount} en attente
+                    </span>
+                  ) : null}
+                </p>
+              </div>
             </div>
           </div>
-          {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {loading ? (
-              <p className="text-sm text-muted-foreground">{t("loading")}</p>
-            ) : filtered.length === 0 ? (
+          {/* Stats rapides */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(
+              [
+                { key: "CANDIDATURE" as const, label: t("filters.review"), variant: "review" as const },
+                { key: "EN_COURS" as const, label: t("filters.inProgress"), variant: "progress" as const },
+                { key: "ACTIF" as const, label: t("filters.accepted"), variant: "accepted" as const },
+                { key: "REJETEE" as const, label: t("filters.rejected"), variant: "rejected" as const },
+              ] as const
+            ).map((stat) => (
+              <button
+                key={stat.key}
+                type="button"
+                onClick={() => setStatusFilter(statusFilter === stat.key ? null : stat.key)}
+                className={`text-start rounded-xl border p-3 transition-shadow hover:shadow-sm ${
+                  statusFilter === stat.key ? "ring-2 ring-[var(--pp-primary)] ring-offset-1" : ""
+                }`}
+              >
+                <Badge variant={stat.variant} className="mb-2">
+                  {stat.label}
+                </Badge>
+                <p className="text-2xl font-bold text-foreground">{statusCounts[stat.key]}</p>
+              </button>
+            ))}
+          </div>
+
+          {/* Toolbar */}
+          <Card className="p-4 border border-border/80 shadow-sm rounded-2xl bg-white">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder={t("searchPlaceholder")}
+                  className="ps-9 rounded-xl"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {FILTER_OPTIONS.map(({ value, labelKey, icon: Icon }) => (
+                  <Button
+                    key={labelKey}
+                    variant={statusFilter === value ? "default" : "outline"}
+                    size="sm"
+                    className="rounded-full px-3.5 gap-1.5"
+                    onClick={() => setStatusFilter(value)}
+                  >
+                    <Icon className="w-3.5 h-3.5" aria-hidden />
+                    {t(`filters.${labelKey}`)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {error ? (
+            <p className="text-sm text-destructive flex items-center gap-2">
+              <XCircle className="w-4 h-4 shrink-0" aria-hidden />
+              {error}
+            </p>
+          ) : null}
+
+          {/* Liste */}
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden />
+              <span className="text-sm">{t("loading")}</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <Card className="p-12 text-center border-dashed rounded-2xl bg-white">
+              <Inbox className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" aria-hidden />
               <p className="text-sm text-muted-foreground">{t("empty")}</p>
-            ) : (
-              filtered.map((insc) => (
-                <Card key={insc.id} className="p-6 border-2 border-border/50">
-                  <div className="mb-4 pb-4 border-b border-border">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-bold text-lg text-foreground">{insc.childName}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(insc.createdAt).toLocaleDateString(currentLocale === "ar" ? "ar-MA" : "fr-FR")}
-                        </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {paged.map((insc) => {
+                const canModerate =
+                  insc.statutCode === "CANDIDATURE" || insc.statutCode === "EN_COURS";
+                return (
+                  <Card
+                    key={insc.id}
+                    className="p-5 border border-border/80 shadow-sm rounded-2xl bg-white hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] border border-[var(--status-progress-border)] flex items-center justify-center shrink-0 text-lg font-bold text-[var(--status-progress-text)]">
+                        {childInitial(insc.childName)}
                       </div>
-                      <Badge className={badgeClassForStatus(insc.statutCode)}>{labelForStatus(insc.statutCode)}</Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-base text-foreground truncate flex items-center gap-1.5">
+                              <Baby className="w-4 h-4 text-[var(--status-progress-text)] shrink-0" aria-hidden />
+                              {insc.childName}
+                            </h3>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <CalendarDays className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              {new Date(insc.createdAt).toLocaleDateString(
+                                currentLocale === "ar" ? "ar-MA" : "fr-FR",
+                                { day: "numeric", month: "short", year: "numeric" },
+                              )}
+                            </p>
+                          </div>
+                          <Badge variant={inscriptionStatusBadgeVariant(insc.statutCode)} className="shrink-0">
+                            {labelForStatus(insc.statutCode)}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-2 text-sm rounded-xl bg-muted/30 p-3 mb-4">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <User className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden />
+                            <span className="text-muted-foreground shrink-0">{t("parent")}:</span>
+                            <span className="font-medium truncate ms-auto text-end">{insc.parentName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Mail className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden />
+                            <span className="text-muted-foreground shrink-0">{t("email")}:</span>
+                            <span className="font-medium truncate ms-auto text-end">{insc.email}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 flex-wrap">
+                          <Link href={withLocalePath(currentLocale, `/admin/inscriptions/${insc.id}`)}>
+                            <Button size="sm" variant="outline" className="gap-1.5 rounded-xl">
+                              <Eye className="w-4 h-4" aria-hidden />
+                              {t("viewDetails")}
+                              <ChevronRight className="w-3.5 h-3.5 opacity-60" aria-hidden />
+                            </Button>
+                          </Link>
+                          {canModerate ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-1.5 rounded-xl"
+                                onClick={() => handleAccept(insc.id)}
+                              >
+                                <CheckCircle2 className="w-4 h-4" aria-hidden />
+                                {t("actions.accept")}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive-outline"
+                                className="gap-1.5 rounded-xl"
+                                onClick={() => setRejectTargetId(insc.id)}
+                              >
+                                <XCircle className="w-4 h-4" aria-hidden />
+                                {t("actions.reject")}
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">{t("parent")}:</span>
-                      <span className="font-medium text-end">{insc.parentName}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-muted-foreground">{t("email")}:</span>
-                      <span className="font-medium text-end break-all">{insc.email}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-2 flex-wrap">
-                    <Link href={withLocalePath(currentLocale, `/admin/inscriptions/${insc.id}`)}>
-                      <Button size="sm" variant="outline" className="flex items-center gap-2 bg-transparent">
-                        <Eye className="w-4 h-4" />
-                        {t("viewDetails")}
-                      </Button>
-                    </Link>
-                    {insc.statutCode === "CANDIDATURE" || insc.statutCode === "EN_COURS" ? (
-                      <>
-                        <Button
-                          size="sm"
-                          className="bg-green-600 text-white hover:bg-green-700"
-                          onClick={() => handleAccept(insc.id)}
-                        >
-                          {t("actions.accept")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-red-500 text-red-600 hover:bg-red-50"
-                          onClick={() => {
-                            setRejectTargetId(insc.id);
-                            setRejectReason("");
-                          }}
-                        >
-                          {t("actions.reject")}
-                        </Button>
-                      </>
-                    ) : null}
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && filtered.length > 0 ? (
+            <AdminListPagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          ) : null}
         </div>
       </AdminMainContent>
 
-      {rejectTargetId ? (
-        <div
-          className="fixed inset-0 z-[400] flex items-end justify-center p-4 sm:items-center"
-          role="presentation"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/45"
-            aria-label="Fermer"
-            onClick={() => {
-              if (!rejectPending) setRejectTargetId(null);
-            }}
-          />
-          <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl">
-            <h2 className="text-base font-semibold text-gray-900">{t("actions.reject")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("rejectPrompt")}</p>
-            <Textarea
-              className="mt-3 min-h-[88px]"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Motif (optionnel)"
-            />
-            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={rejectPending}
-                onClick={() => setRejectTargetId(null)}
-              >
-                Annuler
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={rejectPending}
-                onClick={() => void submitReject()}
-              >
-                {rejectPending ? "…" : t("actions.reject")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <RejectInscriptionDialog
+        open={Boolean(rejectTargetId)}
+        title={t("rejectDialog.title")}
+        description={t("rejectDialog.description")}
+        reasonLabel={t("rejectDialog.reasonLabel")}
+        reasonPlaceholder={t("rejectDialog.reasonPlaceholder")}
+        confirmLabel={t("rejectDialog.confirm")}
+        cancelLabel={t("rejectDialog.cancel")}
+        pending={rejectPending}
+        onCancel={() => {
+          if (!rejectPending) setRejectTargetId(null);
+        }}
+        onConfirm={(raison) => {
+          if (rejectTargetId) void handleReject(rejectTargetId, raison);
+        }}
+      />
     </div>
   );
 }

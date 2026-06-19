@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { fetchSession, logoutSession } from "@/lib/auth-session";
 import {
@@ -163,7 +164,7 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
           "w-full flex items-center rounded-lg text-sm font-medium transition-all",
           collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-4 py-2",
           isActive
-            ? "bg-primary text-primary-foreground"
+            ? "bg-pp-fill text-pp-text font-semibold border border-pp-border/80"
             : "text-sidebar-foreground hover:bg-sidebar-accent/30",
         )}
         aria-label={collapsed ? label : undefined}
@@ -301,7 +302,7 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
                       "w-full flex items-center rounded-lg text-sm font-medium transition-all",
                       collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-4 py-2",
                       isActive
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-pp-fill text-pp-text font-semibold border border-pp-border/80"
                         : "text-sidebar-foreground hover:bg-sidebar-accent/30",
                     )}
                     aria-label={collapsed ? label : undefined}
@@ -326,7 +327,7 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
                           className={cn(
                             "flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-all",
                             isSubActive
-                              ? "bg-primary/20 text-primary-foreground"
+                              ? "bg-pp-fill/70 text-pp-text"
                               : "text-sidebar-foreground/70 hover:bg-sidebar-accent/20",
                           )}
                         >
@@ -403,7 +404,7 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
                   className={cn(
                     "w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     isActive
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-pp-fill text-pp-text font-semibold border border-pp-border/80"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/30",
                   )}
                 >
@@ -421,7 +422,7 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
                   className={cn(
                     "w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     isActive
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-pp-fill text-pp-text font-semibold border border-pp-border/80"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/30",
                   )}
                 >
@@ -448,7 +449,7 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
                           className={cn(
                             "flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-all",
                             isSubActive
-                              ? "bg-primary/20 text-primary-foreground"
+                              ? "bg-pp-fill/70 text-pp-text"
                               : "text-sidebar-foreground/70 hover:bg-sidebar-accent/20",
                           )}
                         >
@@ -479,18 +480,20 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
             </div>
             <p className="text-sm text-gray-600">{t('logoutConfirmMessage')}</p>
             <div className="flex gap-3 pt-1">
-            <button
-              onClick={() => void handleLogout()}
-                className="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white hover:bg-destructive/90 transition-colors"
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => void handleLogout()}
               >
                 {t('logoutConfirmYes')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={() => setLogoutConfirm(false)}
-                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 {t('logoutConfirmNo')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

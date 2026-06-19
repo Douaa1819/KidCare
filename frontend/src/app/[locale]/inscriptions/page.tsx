@@ -2,81 +2,125 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useState } from "react"
-import { Card } from "@/components/ui/card"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useTranslations } from "next-intl"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { AuthShell } from "@/components/auth/auth-shell"
+import type { Locale } from "@/lib/i18n/config"
 import StepIndicator from "@/components/inscriptions/step-indicator"
-import Step1ChildInfo from "@/components/inscriptions/step-1-child-info"
-import Step2ParentInfo from "@/components/inscriptions/step-2-parent-info"
-import Step3AuthorizedPersons from "@/components/inscriptions/step-3-authorized-persons"
+import Step1ChildInfo, { validateStep1Fields, type Step1FormData } from "@/components/inscriptions/step-1-child-info"
+import Step2ParentInfo, { validateStep2Fields, type Step2FormData } from "@/components/inscriptions/step-2-parent-info"
+import Step3AuthorizedPersons, { RELATION_OTHER, validateStep3Fields } from "@/components/inscriptions/step-3-authorized-persons"
 import Step4HealthInfo from "@/components/inscriptions/step-4-health-info"
 import Step5Regulations from "@/components/inscriptions/step-5-regulations"
 import SuccessScreen from "@/components/inscriptions/success-screen"
 import { apiClient } from "@/lib/api"
-import { getBirthdateValidation, isValidCin, isValidEmail, isValidName, isValidPhone } from "@/lib/form-validation"
-import { usePathname } from "next/navigation"
+import { focusFirstFormError } from "@/lib/form-error-focus"
+import { getDefaultChildAgePolicy } from "@/lib/child-age-policy"
+import { PROFESSION_OTHER } from "@/lib/inscription-constants"
+import { resolveCityValue } from "@/lib/inscription-locations"
+
+type FormData = Step1FormData & Step2FormData & {
+  sansRestriction: boolean
+  authorizedPersons: { name: string; relationship: string; otherRelationship?: string; phone: string; cin: string }[]
+  height: string
+  weight: string
+  familyHistory: string
+  tagsMaladies: string[]
+  tagsAllergies: string[]
+  tagsIntolerances: string[]
+  healthTags: string[]
+  restrictionAlimentaire: string
+  restrictionDetails: string
+  surgicalInterventions: string
+  remarks: string
+  regulationsAccepted: boolean
+  confirmationExacte: boolean
+}
+
+const INITIAL_FORM: FormData = {
+  childFirstName: "",
+  childLastName: "",
+  dateOfBirth: "",
+  nationalityCountry: "",
+  nationalityCity: "",
+  nationalityCityOther: "",
+  birthCountry: "",
+  birthCity: "",
+  birthCityOther: "",
+  currentAddress: "",
+  currentAddressLine2: "",
+  currentCountry: "",
+  currentCity: "",
+  currentCityOther: "",
+  gender: "",
+  fraternity: "",
+  rankInFraternity: "",
+  selectedActivities: [],
+  classeIdSouhaitee: "",
+  childPhotoBase64: "",
+  childPhotoFile: "",
+  motherFirstName: "",
+  motherLastName: "",
+  motherPhone: "",
+  motherEmail: "",
+  motherAddress: "",
+  motherProfession: "",
+  motherProfessionOther: "",
+  motherCin: "",
+  fatherFirstName: "",
+  fatherLastName: "",
+  fatherPhone: "",
+  fatherEmail: "",
+  fatherAddress: "",
+  fatherProfession: "",
+  fatherProfessionOther: "",
+  fatherCin: "",
+  familySituation: "",
+  responsablePrincipal: "mother",
+  declarationHonneur: false,
+  sansRestriction: false,
+  authorizedPersons: [],
+  height: "",
+  weight: "",
+  familyHistory: "",
+  tagsMaladies: [],
+  tagsAllergies: [],
+  tagsIntolerances: [],
+  healthTags: [],
+  restrictionAlimentaire: "sans_restriction",
+  restrictionDetails: "",
+  surgicalInterventions: "",
+  remarks: "",
+  regulationsAccepted: false,
+  confirmationExacte: false,
+}
+
+function resolveProfession(profession: string, other: string, tp: (key: string) => string): string | undefined {
+  if (!profession) return undefined
+  if (profession === PROFESSION_OTHER) return other.trim() || undefined
+  return tp(profession)
+}
 
 export default function InscriptionsPage() {
+  const t = useTranslations("registration")
+  const tv = useTranslations("registration.validation")
+  const te = useTranslations("registration.errors")
+  const tp = useTranslations("registration.professions")
+  const tr = useTranslations("registration.pickup.relations")
+  const pathname = usePathname()
+  const locale: Locale = pathname?.startsWith("/ar") ? "ar" : "fr"
+
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [showStepErrors, setShowStepErrors] = useState(false)
-  const pathname = usePathname()
+  const [stepErrors, setStepErrors] = useState<Record<string, string>>({})
   const [classes, setClasses] = useState<{ id: string; nom: string; complet?: boolean; nbEnfants?: number; capacite?: number }[]>([])
   const [classesError, setClassesError] = useState<string | null>(null)
-
-  const [formData, setFormData] = useState({
-    // ── Step 1: Child ──────────────────────────────────────────────────────
-    childFirstName: "",
-    childLastName: "",
-    dateOfBirth: "",
-    fraternity: "",
-    rankInFraternity: "",
-    selectedActivities: [] as string[],
-    classeIdSouhaitee: "",
-    childPhotoBase64: "",
-    childPhotoFile: "",
-
-    // ── Step 2: Parents ────────────────────────────────────────────────────
-    motherFirstName: "",
-    motherLastName: "",
-    motherPhone: "",
-    motherEmail: "",
-    motherAddress: "",
-    motherProfession: "",
-    motherCin: "",
-    fatherFirstName: "",
-    fatherLastName: "",
-    fatherPhone: "",
-    fatherEmail: "",
-    fatherAddress: "",
-    fatherProfession: "",
-    fatherCin: "",
-    familySituation: "",
-    responsablePrincipal: "mother" as "mother" | "father",
-    declarationHonneur: false,
-
-    // ── Step 3: Authorized Persons ─────────────────────────────────────────
-    sansRestriction: false,
-    authorizedPersons: [] as { name: string; relationship: string; otherRelationship?: string; phone: string; cin: string }[],
-
-    // ── Step 4: Health ────────────────────────────────────────────────────
-    height: "",
-    weight: "",
-    familyHistory: "",
-    tagsMaladies: [] as string[],
-    tagsAllergies: [] as string[],
-    tagsIntolerances: [] as string[],
-    healthTags: [] as string[],
-    restrictionAlimentaire: "sans_restriction",
-    restrictionDetails: "",
-    surgicalInterventions: "",
-    remarks: "",
-
-    // ── Step 5: Regulations ────────────────────────────────────────────────
-    regulationsAccepted: false,
-    confirmationExacte: false,
-  })
+  const [formData, setFormData] = useState<FormData>(INITIAL_FORM)
+  const agePolicyRef = useRef(getDefaultChildAgePolicy())
 
   useEffect(() => {
     let cancelled = false
@@ -96,101 +140,103 @@ export default function InscriptionsPage() {
         }
       } catch (err) {
         console.error("[Inscriptions] Error loading classes", err)
-        if (!cancelled) {
-          setClassesError("Impossible de charger la liste des classes. Vous pouvez tout de même continuer.")
-        }
+        if (!cancelled) setClassesError(te("classesLoad"))
       }
     }
     fetchClasses()
     return () => { cancelled = true }
+  }, [te])
+
+  useEffect(() => {
+    if (!showStepErrors) return
+    focusFirstFormError(Object.keys(stepErrors))
+  }, [showStepErrors, stepErrors, currentStep])
+
+  const handleStepErrors = useCallback((errors: Record<string, string>) => {
+    setStepErrors(errors)
   }, [])
 
-  const validateStep1 = () => {
-    if (!formData.childFirstName.trim()) return "Le prénom de l'enfant est obligatoire."
-    if (!isValidName(formData.childFirstName)) return "Prénom invalide — lettres uniquement, sans chiffres."
-    if (!formData.childLastName.trim()) return "Le nom de l'enfant est obligatoire."
-    if (!isValidName(formData.childLastName)) return "Nom invalide — lettres uniquement, sans chiffres."
-    const birthdateError = getBirthdateValidation(formData.dateOfBirth)
-    if (birthdateError) return birthdateError
-    if (!formData.classeIdSouhaitee) return "Veuillez sélectionner une classe souhaitée."
-    return null
+  const step1ValidationMessages = {
+    childFirstNameRequired: tv("childFirstNameRequired"),
+    childFirstNameInvalid: tv("childFirstNameInvalid"),
+    childLastNameRequired: tv("childLastNameRequired"),
+    childLastNameInvalid: tv("childLastNameInvalid"),
+    birthCountryRequired: tv("birthCountryRequired"),
+    birthCityRequired: tv("birthCityRequired"),
+    birthCityInvalid: tv("birthCityInvalid"),
+    nationalityCountryRequired: tv("nationalityCountryRequired"),
+    nationalityCityRequired: tv("nationalityCityRequired"),
+    nationalityCityInvalid: tv("nationalityCityInvalid"),
+    currentCountryRequired: tv("currentCountryRequired"),
+    currentAddressRequired: tv("currentAddressRequired"),
+    currentCityRequired: tv("currentCityRequired"),
+    currentCityInvalid: tv("currentCityInvalid"),
+    classRequired: tv("classRequired"),
+    fraternityMustBeNumber: tv("fraternityMustBeNumber"),
+    rankMustBeNumber: tv("rankMustBeNumber"),
+    rankExceedsFraternity: (max: string) => tv("rankExceedsFraternity", { max }),
+    dateRequired: tv("dateRequired"),
+    dateInvalidFormat: tv("dateInvalidFormat"),
+    dateInvalid: tv("dateInvalid"),
+    dateTooYoung: (min: string, age: string) => tv("dateTooYoung", { min, age }),
+    dateTooOld: (max: string, age: string) => tv("dateTooOld", { max, age }),
   }
 
-  const validateStep2 = () => {
-    if (!formData.motherEmail.trim() && !formData.fatherEmail.trim())
-      return "L'e-mail d'au moins un parent est obligatoire."
-    if (formData.motherEmail && !isValidEmail(formData.motherEmail))
-      return "L'e-mail de la mère est invalide."
-    if (formData.fatherEmail && !isValidEmail(formData.fatherEmail))
-      return "L'e-mail du père est invalide."
-    if (formData.motherPhone && !isValidPhone(formData.motherPhone))
-      return "Téléphone de la mère invalide (ex : 0612345678)."
-    if (formData.fatherPhone && !isValidPhone(formData.fatherPhone))
-      return "Téléphone du père invalide (ex : 0612345678)."
-    if (!formData.declarationHonneur)
-      return "La déclaration sur l'honneur est obligatoire."
-    return null
+  const step2ValidationMessages = {
+    firstNameInvalid: tv("firstNameInvalid"),
+    lastNameInvalid: tv("lastNameInvalid"),
+    emailInvalid: tv("emailInvalid"),
+    phoneInvalid: tv("phoneInvalid"),
+    cinInvalid: tv("cinInvalid"),
+    professionOtherRequired: tv("professionOtherRequired"),
+    emailRequired: tv("emailRequired"),
+    declarationRequired: tv("declarationRequired"),
   }
 
-  const validateStep3 = () => {
-    if (formData.sansRestriction) return null
-    for (let i = 0; i < formData.authorizedPersons.length; i += 1) {
-      const p = formData.authorizedPersons[i]
-      const label = `Personne autorisée ${i + 1}`
-      if (!p.name?.trim()) return `${label} : le nom complet est obligatoire.`
-      if (!isValidName(p.name)) return `${label} : le nom ne doit pas contenir de chiffres.`
-      if (!p.relationship?.trim()) return `${label} : le lien avec l'enfant est obligatoire.`
-      if (p.relationship === "Autre" && !p.otherRelationship?.trim()) return `${label} : précisez la relation.`
-      if (p.relationship === "Autre" && !isValidName(p.otherRelationship ?? "")) return `${label} : la relation précisée est invalide.`
-      if (!p.phone?.trim()) return `${label} : le téléphone est obligatoire.`
-      if (!isValidPhone(p.phone)) return `${label} : téléphone invalide (ex : 0612345678).`
-      if (!p.cin?.trim()) return `${label} : la CIN est obligatoire.`
-      if (!isValidCin(p.cin)) return `${label} : CIN invalide (ex : AB123456 ou A123456).`
-    }
-    return null
+  const validateCurrentStep = (): Record<string, string> => {
+    if (currentStep === 1) return validateStep1Fields(formData, agePolicyRef.current, step1ValidationMessages)
+    if (currentStep === 2) return validateStep2Fields(formData, step2ValidationMessages)
+    if (currentStep === 3) return validateStep3Fields(formData.authorizedPersons, formData.sansRestriction, tv)
+    return {}
   }
 
   const handleNext = () => {
     setSubmitError(null)
+    const errs = validateCurrentStep()
+    setStepErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      setShowStepErrors(true)
+      return
+    }
     setShowStepErrors(false)
-
-    if (currentStep === 1) {
-      const err = validateStep1()
-      if (err) { setShowStepErrors(true); return }
-    }
-    if (currentStep === 2) {
-      const err = validateStep2()
-      if (err) { setShowStepErrors(true); return }
-    }
-    if (currentStep === 3) {
-      const err = validateStep3()
-      if (err) { setSubmitError(err); setShowStepErrors(true); return }
-    }
-
     if (currentStep < 5) setCurrentStep(currentStep + 1)
   }
 
   const handlePrevious = () => {
-    if (currentStep > 1) { setCurrentStep(currentStep - 1); setShowStepErrors(false); setSubmitError(null) }
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+      setShowStepErrors(false)
+      setSubmitError(null)
+    }
   }
 
   const handleSubmit = async () => {
     if (!formData.regulationsAccepted || !formData.confirmationExacte) {
-      setSubmitError("Veuillez cocher les deux cases obligatoires en bas du formulaire.")
+      setSubmitError(tv("regulationsRequired"))
       return
     }
     if (!formData.declarationHonneur) {
-      setSubmitError("La déclaration sur l'honneur est obligatoire (étape 2).")
+      setSubmitError(tv("declarationRequired"))
       return
     }
 
     const primaryEmail = formData.motherEmail || formData.fatherEmail
     if (!primaryEmail) {
-      setSubmitError("Veuillez renseigner au moins l'email d'un parent.")
+      setSubmitError(tv("emailRequired"))
       return
     }
     if (!formData.classeIdSouhaitee) {
-      setSubmitError("Veuillez sélectionner une classe souhaitée.")
+      setSubmitError(tv("classRequired"))
       return
     }
 
@@ -210,6 +256,8 @@ export default function InscriptionsPage() {
           email: formData.motherEmail || undefined,
           telephone: formData.motherPhone || undefined,
           cin: formData.motherCin || undefined,
+          adresse: formData.motherAddress || undefined,
+          profession: resolveProfession(formData.motherProfession, formData.motherProfessionOther, tp),
           principal: formData.responsablePrincipal === "mother",
         })
       }
@@ -222,22 +270,50 @@ export default function InscriptionsPage() {
           email: formData.fatherEmail || undefined,
           telephone: formData.fatherPhone || undefined,
           cin: formData.fatherCin || undefined,
+          adresse: formData.fatherAddress || undefined,
+          profession: resolveProfession(formData.fatherProfession, formData.fatherProfessionOther, tp),
           principal: formData.responsablePrincipal === "father",
         })
       }
+
+      const familySituationLabel = formData.familySituation
+        ? t(`parents.situations.${formData.familySituation}` as any)
+        : undefined
 
       const payload = {
         famille: {
           emailPrincipal: primaryEmail,
           languePreferee: locale,
           adresseFacturation: formData.motherAddress || formData.fatherAddress || undefined,
-          situationFamiliale: formData.familySituation || undefined,
+          situationFamiliale: familySituationLabel,
         },
         tuteurs,
         enfant: {
           prenom: formData.childFirstName,
           nom: formData.childLastName,
           dateNaissance: formData.dateOfBirth,
+          genre: formData.gender || undefined,
+          nationalitePays: formData.nationalityCountry || undefined,
+          nationaliteVille: resolveCityValue(
+            formData.nationalityCountry,
+            formData.nationalityCity,
+            formData.nationalityCityOther,
+          ) || undefined,
+          paysNaissance: formData.birthCountry || undefined,
+          villeNaissance: resolveCityValue(
+            formData.birthCountry,
+            formData.birthCity,
+            formData.birthCityOther,
+          ) || undefined,
+          adresseActuelle: formData.currentAddressLine2
+            ? `${formData.currentAddress}\n${formData.currentAddressLine2}`
+            : formData.currentAddress,
+          paysActuel: formData.currentCountry || undefined,
+          villeActuelle: resolveCityValue(
+            formData.currentCountry,
+            formData.currentCity,
+            formData.currentCityOther,
+          ) || undefined,
           photoUrl: formData.childPhotoBase64 || undefined,
           fraternity: formData.fraternity || undefined,
           rankInFraternity: formData.rankInFraternity || undefined,
@@ -263,9 +339,10 @@ export default function InscriptionsPage() {
                 .filter((p) => p.name)
                 .map((p) => ({
                   name: p.name,
-                  relationship: p.relationship === "Autre" && p.otherRelationship?.trim()
-                    ? `Autre - ${p.otherRelationship.trim()}`
-                    : p.relationship,
+                  relationship:
+                    p.relationship === RELATION_OTHER && p.otherRelationship?.trim()
+                      ? `${tr("other")} - ${p.otherRelationship.trim()}`
+                      : tr(p.relationship as any),
                   phone: p.phone,
                   cin: p.cin,
                 })),
@@ -283,127 +360,117 @@ export default function InscriptionsPage() {
       const raw = error?.response?.data?.message
 
       if (status === 413 || (typeof raw === "string" && raw.toLowerCase().includes("too large"))) {
-        setSubmitError("La photo de l'enfant est trop volumineuse. Choisissez une image plus petite ou supprimez la photo.")
+        setSubmitError(te("photoTooLarge"))
       } else if (status === 409 || (typeof raw === "string" && raw.toLowerCase().includes("already exist"))) {
-        setSubmitError("Un compte avec cet e-mail existe déjà. Contactez l'établissement si vous avez déjà une inscription.")
+        setSubmitError(te("emailExists"))
       } else if (Array.isArray(raw)) {
-        // Translate class-validator messages
         const friendly = raw.map((m: string) => {
           if (m.includes("should not exist")) return null
-          if (m.includes("must be an email")) return "Adresse e-mail invalide."
-          if (m.includes("must be a valid ISO 8601")) return "Date de naissance invalide."
-          if (m.includes("must be a string")) return "Un champ texte est manquant ou invalide."
+          if (m.includes("must be an email")) return tv("emailInvalid")
+          if (m.includes("must be a valid ISO 8601")) return tv("childLastNameInvalid")
           return m
         }).filter(Boolean)
-        setSubmitError(friendly.length > 0 ? friendly.join(" ") : "Veuillez vérifier les informations saisies.")
+        setSubmitError(friendly.length > 0 ? friendly.join(" ") : te("checkFields"))
       } else if (typeof raw === "string") {
         setSubmitError(raw)
       } else if (!navigator.onLine) {
-        setSubmitError("Pas de connexion internet. Vérifiez votre réseau et réessayez.")
+        setSubmitError(te("offline"))
       } else {
-        setSubmitError("Envoi impossible pour le moment. Veuillez réessayer dans quelques instants.")
+        setSubmitError(te("generic"))
       }
     }
   }
 
-  const updateFormData = (data: Partial<typeof formData>) => {
+  const updateFormData = (data: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...data }))
   }
 
-  const canSubmit =
-    formData.regulationsAccepted &&
-    formData.confirmationExacte
+  const canSubmit = formData.regulationsAccepted && formData.confirmationExacte
 
-  if (isSubmitted) {
-    return <SuccessScreen />
-  }
+  if (isSubmitted) return <SuccessScreen />
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
-      <div className="container mx-auto px-4 py-6 md:py-12 max-w-2xl">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6 md:mb-8">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 md:w-6 md:h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8m3.5-9c.83 0 1.5-.67 1.5-1.5S14.33 6 13.5 6 12 6.67 12 7.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S7.33 6 6.5 6 5 6.67 5 7.5 5.67 9 6.5 9zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H4.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-xl md:text-3xl font-bold text-foreground">Inscription — PetitsPas</h1>
-            <p className="text-xs md:text-sm text-muted-foreground">Crèche-Maternelle</p>
-          </div>
-        </div>
-
-        {/* Step Indicator */}
-        <div className="mb-6 md:mb-8">
-          <StepIndicator currentStep={currentStep} totalSteps={5} />
-        </div>
-
-        {/* Form Content */}
-        <Card className="p-4 md:p-8 border border-border/60 shadow-sm">
-          {submitError && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-              {submitError}
-            </div>
-          )}
-          {classesError && (
-            <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
-              {classesError}
-            </div>
-          )}
-
-          {currentStep === 1 && (
-            <Step1ChildInfo formData={formData} updateFormData={updateFormData} classes={classes} showErrors={showStepErrors} />
-          )}
-          {currentStep === 2 && (
-            <Step2ParentInfo formData={formData} updateFormData={updateFormData} showErrors={showStepErrors} />
-          )}
-          {currentStep === 3 && (
-            <Step3AuthorizedPersons formData={formData} updateFormData={updateFormData} showErrors={showStepErrors} />
-          )}
-          {currentStep === 4 && (
-            <Step4HealthInfo formData={formData} updateFormData={updateFormData} />
-          )}
-          {currentStep === 5 && (
-            <Step5Regulations formData={formData} updateFormData={updateFormData} />
-          )}
-
-          {/* Navigation */}
-          <div className="flex gap-3 justify-between mt-8 pt-6 border-t border-border">
-            {currentStep > 1 ? (
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                className="px-5"
-              >
-                Précédent
-              </Button>
-            ) : <span />}
-
-            {currentStep < 5 ? (
-              <Button
-                onClick={handleNext}
-                className="bg-primary text-primary-foreground px-5 hover:bg-primary/90"
-              >
-                Suivant
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="bg-secondary text-secondary-foreground px-5 hover:bg-secondary/90 disabled:opacity-50"
-              >
-                Soumettre le dossier
-              </Button>
-            )}
-          </div>
-        </Card>
-
-        {/* Progress hint */}
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Étape {currentStep} / 5 — Toutes les données sont sécurisées et confidentielles.
-        </p>
+    <AuthShell
+      locale={locale}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      maxWidth="lg"
+      bareContent
+      backHref={`/${locale}`}
+      backLabel={t("backToLogin")}
+    >
+      <div className="mb-6 md:mb-8">
+        <StepIndicator currentStep={currentStep} totalSteps={5} />
       </div>
-    </div>
+
+      <div className="auth-card !p-4 md:!p-8">
+        {submitError && (
+          <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-sm text-destructive" role="alert">
+            {submitError}
+          </div>
+        )}
+        {classesError && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900" role="status">
+            {classesError}
+          </div>
+        )}
+
+        {currentStep === 1 && (
+          <Step1ChildInfo
+            formData={formData}
+            updateFormData={updateFormData}
+            classes={classes}
+            showErrors={showStepErrors}
+            onValidationErrors={handleStepErrors}
+          />
+        )}
+        {currentStep === 2 && (
+          <Step2ParentInfo
+            formData={formData}
+            updateFormData={updateFormData}
+            showErrors={showStepErrors}
+            onValidationErrors={handleStepErrors}
+          />
+        )}
+        {currentStep === 3 && (
+          <Step3AuthorizedPersons
+            formData={formData}
+            updateFormData={updateFormData}
+            showErrors={showStepErrors}
+            onValidationErrors={handleStepErrors}
+          />
+        )}
+        {currentStep === 4 && (
+          <Step4HealthInfo formData={formData} updateFormData={updateFormData} />
+        )}
+        {currentStep === 5 && (
+          <Step5Regulations formData={formData} updateFormData={updateFormData} />
+        )}
+
+        <div className="flex gap-3 justify-between mt-8 pt-6 border-t border-[#e8f0f6]">
+          {currentStep > 1 ? (
+            <Button variant="outline" onClick={handlePrevious} className="px-5 rounded-xl">
+              {t("previous")}
+            </Button>
+          ) : (
+            <span />
+          )}
+
+          {currentStep < 5 ? (
+            <Button variant="auth" onClick={handleNext} className="px-6 font-semibold">
+              {t("next")}
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={!canSubmit} variant="secondary" className="px-6 font-semibold rounded-xl">
+              {t("submit")}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <p className="text-center auth-footer-text mt-4">
+        {t("progressHint", { current: currentStep, total: 5 })}
+      </p>
+    </AuthShell>
   )
 }

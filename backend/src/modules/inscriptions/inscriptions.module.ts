@@ -6,12 +6,13 @@ import { InscriptionsAcceptService } from './inscriptions-accept.service';
 import { InscriptionsAcceptController } from './inscriptions-accept.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailModule } from '../../common/email/email.module';
+import { PlatformModule } from '../platform/platform.module';
 
 /**
  * Module pour les inscriptions (publiques et admin)
  */
 @Module({
-  imports: [PrismaModule, EmailModule],
+  imports: [PrismaModule, EmailModule, PlatformModule],
   controllers: [InscriptionsController, InscriptionsAdminController, InscriptionsAcceptController],
   providers: [InscriptionsService, InscriptionsAcceptService],
   exports: [InscriptionsService, InscriptionsAcceptService],

@@ -21,7 +21,7 @@ export class EventsService {
       startAt: event.startAt,
       endAt: event.endAt,
       classeId: event.classeId,
-      status: event.status,
+      status: event.status ?? 'PUBLISHED',
       cost: event.cost === null ? null : Number(event.cost),
       currency: event.currency,
       createdAt: event.createdAt,
@@ -96,6 +96,10 @@ export class EventsService {
       throw new NotFoundException('Événement non trouvé');
     }
 
+    if (event.status === 'CANCELLED') {
+      throw new BadRequestException('Impossible de modifier un événement annulé');
+    }
+
     if (dto.classeId !== undefined) {
       const classe = await this.prisma.classe.findUnique({
         where: { id: dto.classeId },
@@ -141,6 +145,45 @@ export class EventsService {
         currency,
       },
     });
+
+    return this.toEventResponse(updatedEvent);
+  }
+
+  /**
+   * Annule un événement publié et notifie les parents par email.
+   */
+  async cancelEvent(id: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id },
+      include: { classe: { select: { nom: true } } },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Événement non trouvé');
+    }
+
+    if (event.status === 'CANCELLED') {
+      throw new BadRequestException('Cet événement est déjà annulé');
+    }
+
+    const updatedEvent = await this.prisma.event.update({
+      where: { id },
+      data: { status: 'CANCELLED' },
+    });
+
+    void this.notificationDispatcher
+      .notifyClassEventCancelled({
+        classeId: event.classeId,
+        classeNom: event.classe.nom,
+        titre: event.titre,
+        description: event.description,
+        startAt: event.startAt,
+        endAt: event.endAt,
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Email annulation événement: ${msg}`);
+      });
 
     return this.toEventResponse(updatedEvent);
   }

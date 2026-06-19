@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Baby, Calendar, FileText, CheckCircle2, AlertTriangle, Clock, Users, ChevronRight } from "lucide-react";
+import { Baby, Calendar, ClipboardList, CheckCircle2, AlertTriangle, Clock, Users, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Locale } from "@/lib/i18n/config";
 import Link from "next/link";
@@ -172,7 +172,7 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
     complete: {
       label: t("presenceOfDay.status.complete.label"),
       desc: t("presenceOfDay.status.complete.desc", { todayRecorded, totalChildren }),
-      bg: "bg-emerald-500",
+      bg: "bg-[var(--pp-secondary)]",
       icon: <CheckCircle2 className="w-5 h-5" />,
       badge: "OK",
     },
@@ -210,7 +210,7 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center gap-2 min-w-0">
-                <Baby className="h-7 w-7 text-primary flex-shrink-0" />
+                <Baby className="h-7 w-7 text-pp-text flex-shrink-0" />
                 <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">{t("title")}</h1>
               </div>
             </div>
@@ -240,8 +240,8 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
             {/* Enfants */}
             <Link href={`/${currentLocale}/admin/enfants`} className="block">
               <Card className="border border-gray-200 shadow-sm bg-white rounded-2xl px-5 py-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer h-full">
-                <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <Baby className="h-5 w-5 text-blue-600" />
+                <div className="w-11 h-11 rounded-full bg-pp-fill flex items-center justify-center flex-shrink-0">
+                  <Baby className="h-5 w-5 text-pp-text" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-500">{t("totalChildren")}</p>
@@ -254,8 +254,8 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
             {/* Inscriptions en attente */}
             <Link href={`/${currentLocale}/admin/inscriptions`} className="block">
               <Card className="border border-gray-200 shadow-sm bg-white rounded-2xl px-5 py-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer h-full">
-                <div className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-amber-600" />
+                <div className="w-11 h-11 rounded-full bg-[var(--primary-light)] border border-[var(--status-progress-border)] flex items-center justify-center flex-shrink-0">
+                  <ClipboardList className="h-5 w-5 text-[var(--status-progress-text)]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-500">{t("pendingRegistrations")}</p>
@@ -314,8 +314,8 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                           item.completed
-                            ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                            : "bg-amber-100 text-amber-700 border border-amber-200"
+                            ? "pp-surface-success border"
+                            : "pp-surface-review border"
                         }`}
                       >
                         {item.completed ? t("teacherCall.badges.complete") : `${item.totalEnfantsAvecPresence}/${item.totalEnfants}`}
@@ -327,8 +327,8 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
                           key={cls.classeId}
                           className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${
                             cls.completed
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
+                              ? "pp-surface-success border"
+                              : "pp-surface-review border"
                           }`}
                         >
                           {cls.completed ? "✓" : "⚠"} {cls.classeNom} — {cls.enfantsAvecPresence}/{cls.totalEnfants}
@@ -357,7 +357,7 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
                       onClick={() => setPresencePeriod(p)}
                       className={`text-[11px] px-2 py-1 rounded-md font-medium transition-colors ${
                         presencePeriod === p
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-pp-fill text-pp-text border border-pp-border"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -376,33 +376,33 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
                     return (
                       <div
                         key={d.date}
-                        className={`text-xs border-b pb-2 last:border-0 ${isToday ? "text-primary" : "text-muted-foreground"}`}
+                        className={`text-xs border-b pb-2 last:border-0 ${isToday ? "text-pp-text" : "text-muted-foreground"}`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`font-medium ${isToday ? "text-primary" : "text-foreground"}`}>
+                          <span className={`font-medium ${isToday ? "text-pp-text" : "text-foreground"}`}>
                             {new Date(d.date).toLocaleDateString("fr-FR", {
                               weekday: "short",
                               day: "2-digit",
                               month: "2-digit",
                             })}
                             {isToday && (
-                              <span className="ml-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                              <span className="ml-1.5 text-[10px] bg-pp-fill text-pp-text px-1.5 py-0.5 rounded-full border border-pp-border">
                                 Auj.
                               </span>
                             )}
                           </span>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-emerald-600">✓ {d.present || 0}</span>
+                            <span className="text-[10px] pp-text-success">✓ {d.present || 0}</span>
                             <span className="text-[10px] text-red-500">✗ {d.absent || 0}</span>
-                            <span className="text-[10px] text-blue-500">~ {d.justifie || 0}</span>
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                            <span className="text-[10px] text-pp-accent">~ {d.justifie || 0}</span>
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-pp-fill text-pp-text text-xs font-semibold border border-pp-border">
                               {total}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${presentPct}%` }} />
+                            <div className="h-full pp-bar-success rounded-full" style={{ width: `${presentPct}%` }} />
                           </div>
                           <span className="text-[10px] text-gray-400 w-12 text-right">{presentPct}% présents</span>
                         </div>
@@ -431,7 +431,7 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
                       <div className="flex items-center gap-2">
                         <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-primary rounded-full"
+                            className="h-full bg-pp-accent rounded-full"
                             style={{
                               width: `${Math.round((m.total / Math.max(...inscriptionStats.map((x: any) => x.total || 0), 1)) * 100)}%`,
                             }}
@@ -452,18 +452,20 @@ export default function AdminPage({ params }: { params: Promise<{ locale: Locale
 
           {/* ── Raccourcis ───────────────────────────────────────────────── */}
           {pendingRegistrations > 0 && (
-            <Card className="border border-amber-200 bg-amber-50 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <Card className="border pp-surface-review rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <div className="w-10 h-10 rounded-xl bg-white/60 border border-[var(--status-review-border)] flex items-center justify-center flex-shrink-0">
+                  <ClipboardList className="w-5 h-5 text-[var(--status-review-text)] flex-shrink-0" />
+                </div>
                 <div>
-                  <p className="text-sm font-semibold text-amber-900">
+                  <p className="text-sm font-semibold text-[var(--status-review-text)]">
                     {pendingRegistrations} inscription{pendingRegistrations > 1 ? "s" : ""} en attente de traitement
                   </p>
-                  <p className="text-xs text-amber-700 mt-0.5">Des dossiers nécessitent votre validation.</p>
+                  <p className="text-xs opacity-80 mt-0.5">Des dossiers nécessitent votre validation.</p>
                 </div>
               </div>
               <Link href={`/${currentLocale}/admin/inscriptions`}>
-                <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white flex-shrink-0 gap-1 text-xs">
+                <Button size="sm" variant="default" className="flex-shrink-0 gap-1 text-xs rounded-xl">
                   Traiter <ChevronRight className="w-3 h-3" />
                 </Button>
               </Link>

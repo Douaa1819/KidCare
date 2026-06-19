@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength, Min, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleUtilisateur, StatutUtilisateur } from '@prisma/client';
 
@@ -195,6 +195,12 @@ export class UpdateTeacherProfileDto {
   @IsOptional()
   @IsString()
   nom?: string;
+
+  @ApiProperty({ example: 'Parent très impliqué', description: 'Notes internes admin', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notesAdmin?: string;
 }
 
 /**

@@ -7,11 +7,13 @@ import { ReactNode } from "react"
 import type { Locale } from "@/lib/i18n/config"
 import frMessages from "@/messages/fr.json"
 import arMessages from "@/messages/ar.json"
+import registrationFr from "@/messages/registration-fr.json"
+import registrationAr from "@/messages/registration-ar.json"
 import { initFeedbackMessages } from "@/lib/feedback"
 
 const MESSAGES_BY_LOCALE: Record<Locale, AbstractIntlMessages> = {
-  fr: frMessages as AbstractIntlMessages,
-  ar: arMessages as AbstractIntlMessages,
+  fr: { ...frMessages, registration: registrationFr } as AbstractIntlMessages,
+  ar: { ...arMessages, registration: registrationAr } as AbstractIntlMessages,
 }
 
 function onIntlError(error: IntlError) {
