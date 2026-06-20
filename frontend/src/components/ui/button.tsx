@@ -21,7 +21,7 @@ const buttonVariants = cva(
         brand:
           "bg-accent text-accent-foreground hover:bg-[var(--accent-hover)] active:bg-[var(--accent-active)] focus-visible:ring-[var(--accent-ring)]",
         auth:
-          "bg-[var(--auth-blue-btn)] text-white hover:bg-[var(--auth-blue-btn-hover)] active:brightness-95 focus-visible:ring-[var(--auth-blue-btn-ring)] shadow-sm",
+          "bg-[var(--auth-accent)] text-white hover:bg-[var(--auth-accent-hover)] active:brightness-95 focus-visible:ring-[var(--auth-accent-ring)] shadow-sm",
         success:
           "bg-secondary text-secondary-foreground hover:bg-[var(--secondary-hover)] active:bg-[var(--secondary-active)] focus-visible:ring-[var(--success-ring)]",
         secondary:

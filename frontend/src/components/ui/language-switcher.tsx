@@ -4,7 +4,7 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { Button } from './button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
 import { locales, type Locale, localeNames, localeFlags } from '@/lib/i18n/config';
-import { Globe } from 'lucide-react';
+import { Check, Globe, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   hrefForLocaleFromPathname,
@@ -46,34 +46,46 @@ export function LanguageSwitcher({
 
   if (variant === 'auth') {
     return (
-      <div
-        className={cn(
-          'inline-flex rounded-xl border border-[var(--auth-border)] bg-white/90 p-0.5 shadow-sm',
-          compact ? 'w-full' : '',
-        )}
-        role="group"
-        aria-label={a11y.language}
-      >
-        {locales.map((locale) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <button
-            key={locale}
             type="button"
-            onClick={() => switchLanguage(locale)}
-            title={localeNames[locale]}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all',
-              compact ? 'flex-1' : 'min-w-[5.5rem]',
-              locale === activeLocale
-                ? 'bg-[var(--auth-blue)] text-[var(--auth-text)] shadow-sm ring-1 ring-[var(--auth-blue)]'
-                : 'text-[var(--auth-text-muted)] hover:bg-white/80 hover:text-[var(--auth-text)]',
+              'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+              'border border-[var(--auth-border)] bg-white/85 text-[var(--auth-text-muted)]',
+              'transition-colors hover:border-[var(--auth-accent)]/25 hover:bg-white hover:text-[var(--auth-text)]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--auth-accent)]/30 focus-visible:ring-offset-1',
             )}
+            aria-label={a11y.changeLanguage}
           >
-            <Globe className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
-            <span aria-hidden>{localeFlags[locale]}</span>
-            <span>{locale === 'fr' ? 'FR' : 'عربي'}</span>
+            <Languages className="h-4 w-4" aria-hidden />
           </button>
-        ))}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="min-w-[9.5rem] rounded-lg border-[var(--auth-border)] bg-white p-1 shadow-md"
+        >
+          {locales.map((locale) => (
+            <DropdownMenuItem
+              key={locale}
+              onClick={() => switchLanguage(locale)}
+              className={cn(
+                'flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm',
+                'text-[var(--auth-text)] focus:bg-[var(--auth-accent-soft)] focus:text-[var(--auth-text)]',
+              )}
+              dir={locale === 'ar' ? 'rtl' : 'ltr'}
+            >
+              <span>{localeNames[locale]}</span>
+              {locale === activeLocale ? (
+                <Check
+                  className="ms-auto h-3.5 w-3.5 shrink-0 text-[var(--auth-accent)]"
+                  aria-hidden
+                />
+              ) : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 

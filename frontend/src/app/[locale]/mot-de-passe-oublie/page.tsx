@@ -1,7 +1,7 @@
 "use client"
 
 import { use, useState, FormEvent } from "react"
-import { Mail, Send } from "lucide-react"
+import { Mail, Send, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { InlineAlert } from "@/components/ui/inline-alert"
@@ -16,6 +16,7 @@ export default function ForgotPasswordPage({
 }) {
   const { locale } = use(params)
   const t = useTranslations("forgotPassword")
+  const tHome = useTranslations("home")
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +65,7 @@ export default function ForgotPasswordPage({
       subtitle={t("subtitle")}
       backHref={`/${locale}`}
       backLabel={t("backToLogin")}
+      animateLogo
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         {error ? (
@@ -77,7 +79,7 @@ export default function ForgotPasswordPage({
           </InlineAlert>
         ) : null}
 
-        <div className="space-y-2 text-left">
+        <div className="space-y-2 text-start">
           <label htmlFor="email" className="auth-label">
             {t("emailLabel")}
           </label>
@@ -98,7 +100,7 @@ export default function ForgotPasswordPage({
                   ? "!border-red-400 focus:!border-red-500 focus:!ring-red-200"
                   : ""
               }`}
-              placeholder="exemple@thepetitspas.com"
+              placeholder={tHome("emailPlaceholder")}
             />
           </div>
           {fieldError ? <p className="text-xs text-red-600">{fieldError}</p> : null}
@@ -106,12 +108,21 @@ export default function ForgotPasswordPage({
 
         <Button
           type="submit"
-          variant="brand"
-          className="w-full font-semibold rounded-xl py-2.5"
+          variant="auth"
+          className="w-full rounded-xl py-2.5 font-semibold"
           disabled={isSubmitting}
         >
-          <Send className="w-4 h-4 me-2" />
-          {isSubmitting ? t("submitting") : t("submit")}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 me-2 animate-spin" />
+              {t("submitting")}
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 me-2" />
+              {t("submit")}
+            </>
+          )}
         </Button>
       </form>
     </AuthShell>

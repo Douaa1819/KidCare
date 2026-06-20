@@ -2,7 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { LanguageSwitcher } from "@/components/ui/language-switcher"
-import { AuthHeroBackdrop } from "@/components/auth/auth-hero-backdrop"
+import { AuthBackgroundShapes } from "@/components/auth/auth-background-shapes"
 import { Locale } from "@/lib/i18n/config"
 
 type AuthShellProps = {
@@ -35,9 +35,9 @@ export function AuthShell({
 
   return (
     <main className="auth-page-bg flex items-center justify-center px-4 py-8 sm:py-10">
-      <AuthHeroBackdrop />
+      <AuthBackgroundShapes />
       <div className="auth-page-inner container mx-auto w-full">
-        <div className="flex justify-end mb-5 sm:mb-6">
+        <div className="mb-5 flex justify-end sm:mb-6">
           <LanguageSwitcher currentLocale={locale} variant="auth" />
         </div>
 
@@ -57,7 +57,7 @@ export function AuthShell({
                 />
               </div>
             </div>
-            <h1 className="auth-heading text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+            <h1 className="auth-heading text-2xl sm:text-3xl font-semibold tracking-tight">
               {title}
             </h1>
             <p className="auth-subtitle mt-2 text-sm sm:text-base max-w-sm leading-relaxed">
@@ -81,7 +81,7 @@ export function AuthShell({
             <div className="auth-card">
               {children}
               {backHref && backLabel ? (
-                <div className="mt-6 pt-5 border-t border-[#e8f0f6]">
+                <div className="mt-6 pt-5 border-t border-[var(--auth-border)]">
                   <Link href={backHref} className="auth-back-link">
                     <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
                     {backLabel}

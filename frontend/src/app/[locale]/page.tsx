@@ -237,7 +237,7 @@ export default function Home({ params }: { params: Promise<{ locale: Locale }> }
           <p className="text-end pt-0.5">
             <Link
               href={`/${currentLocale}/mot-de-passe-oublie`}
-              className="auth-link text-xs"
+              className="auth-link-accent text-xs"
             >
               {t("forgotPasswordLink")}
             </Link>
@@ -246,8 +246,8 @@ export default function Home({ params }: { params: Promise<{ locale: Locale }> }
 
         <Button
           type="submit"
-          variant="brand"
-          className="w-full font-semibold rounded-xl py-2.5"
+          variant="auth"
+          className="w-full rounded-xl py-2.5 font-semibold"
           disabled={isSubmitting}
         >
           {isSubmitting ? (
@@ -264,9 +264,9 @@ export default function Home({ params }: { params: Promise<{ locale: Locale }> }
         </Button>
       </form>
 
-      <div className="mt-5 pt-5 border-t border-[#e8f0f6] text-center auth-footer-text">
+      <div className="mt-5 border-t border-[var(--auth-border)] pt-5 text-center auth-footer-text">
         <span>{t("notRegistered")} </span>
-        <Link href={`/${currentLocale}/inscriptions`} className="auth-link">
+        <Link href={`/${currentLocale}/inscriptions`} className="auth-link-accent">
           {t("inscriptionLink")}
         </Link>
       </div>
