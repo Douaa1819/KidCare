@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { PetitspasNotFound } from "@/components/petitspas-not-found"
+import { KidCareNotFound } from "@/components/kidcare-not-found"
 import { defaultLocale, locales, type Locale } from "@/lib/i18n/config"
 
 export default function LocaleNotFoundPage() {
@@ -14,7 +14,7 @@ export default function LocaleNotFoundPage() {
     : defaultLocale) as Locale
 
   return (
-    <PetitspasNotFound
+    <KidCareNotFound
       locale={locale}
       copy={{
         title: t("title"),

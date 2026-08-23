@@ -1,6 +1,6 @@
 {
-  "name": "PetitsPas - Gestion de crèche",
-  "short_name": "PetitsPas",
+  "name": "KidCare - Daycare Management Platform",
+  "short_name": "KidCare",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

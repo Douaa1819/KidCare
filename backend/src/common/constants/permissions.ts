@@ -87,9 +87,9 @@ export const DEFAULT_FEATURE_FLAGS = [
 
 export const DEFAULT_PLATFORM_SETTINGS = {
   general: {
-    platformName: 'Petitspas',
-    logo: '/Group 13.svg',
-    contactEmail: 'support@petitspas.ma',
+    platformName: 'KidCare',
+    logo: '',
+    contactEmail: 'support@kidcare.app',
     timezone: 'Africa/Casablanca',
     defaultLanguage: 'fr',
     supportedLanguages: ['fr', 'ar'],
@@ -124,8 +124,8 @@ export const DEFAULT_PLATFORM_SETTINGS = {
   },
   email: {
     smtpEnabled: true,
-    fromAddress: 'noreply@petitspas.ma',
-    replyTo: 'support@petitspas.ma',
+    fromAddress: 'noreply@kidcare.app',
+    replyTo: 'support@kidcare.app',
   },
   maintenance: {
     maintenanceMode: false,

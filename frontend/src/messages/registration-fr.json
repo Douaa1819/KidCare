@@ -1,5 +1,5 @@
 {
-  "title": "Inscription — PetitsPas",
+  "title": "Inscription — KidCare",
   "subtitle": "Crèche-Maternelle",
   "progressHint": "Étape {current} / {total} — Toutes les données sont sécurisées et confidentielles.",
   "previous": "Précédent",
@@ -165,7 +165,7 @@
   "regulations": {
     "title": "Règlement intérieur",
     "loading": "Chargement du règlement…",
-    "acceptRegulations": "J'ai lu et j'accepte le règlement intérieur de PetitsPas et m'engage à le respecter sans réserve.",
+    "acceptRegulations": "J'ai lu et j'accepte le règlement intérieur de KidCare et m'engage à le respecter sans réserve.",
     "confirmExact": "Je confirme que toutes les informations renseignées dans ce formulaire sont exactes et complètes.",
     "readHint": "Veuillez lire et accepter le règlement intérieur",
     "version": "Version {version}"

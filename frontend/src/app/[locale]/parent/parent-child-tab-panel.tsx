@@ -211,7 +211,7 @@ export function ParentChildTabPanel({
             <Button
               type="button"
               size="sm"
-              className="parent-primary-button shrink-0 rounded-xl bg-[#FF6F61] px-3.5 text-xs font-bold text-white shadow-sm"
+              className="parent-primary-button shrink-0 rounded-xl px-3.5 text-xs font-bold text-white shadow-sm"
               onClick={() => {
                 setAddShowErrors(false)
                 onStartAddDelegation()
@@ -327,7 +327,7 @@ export function ParentChildTabPanel({
                     <Button
                       type="button"
                       size="sm"
-                      className="parent-primary-button flex-1 rounded-xl bg-[#FF6F61] text-white"
+                      className="parent-primary-button flex-1 rounded-xl text-white"
                       disabled={delegationSaving}
                       onClick={() => {
                         if (!editValid) {
@@ -360,7 +360,7 @@ export function ParentChildTabPanel({
                       <p className="mt-0.5 text-xs text-muted-foreground">{formatLien(person.role)}</p>
                     ) : null}
                     {person.phone ? (
-                      <p className="mt-0.5 text-xs font-medium text-[#FF6F61] flex items-center gap-1">
+                      <p className="mt-0.5 text-xs font-medium text-[#8B5CF6] flex items-center gap-1">
                         <Phone className="h-3 w-3 shrink-0" aria-hidden />
                         {person.phone}
                       </p>
@@ -400,7 +400,7 @@ export function ParentChildTabPanel({
           {addingDelegation && (
             <div className="space-y-3 rounded-2xl border-2 border-dashed border-[#FFB4AA] bg-[#FFF7F5] p-3 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#FF6F61] shadow-sm">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#8B5CF6] shadow-sm">
                   <UserPlus className="h-4 w-4" aria-hidden />
                 </span>
                 <p className="text-sm font-bold text-gray-900">{t("ui.newAuthorized")}</p>
@@ -492,7 +492,7 @@ export function ParentChildTabPanel({
                 <Button
                   type="button"
                   size="sm"
-                  className="parent-primary-button flex-1 rounded-xl bg-[#FF6F61] text-white"
+                  className="parent-primary-button flex-1 rounded-xl text-white"
                   disabled={delegationSaving}
                   onClick={() => {
                     if (!addValid) {

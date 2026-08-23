@@ -1,255 +1,234 @@
-# Petitspas – Plateforme SaaS pour crèches
+# KidCare
 
-## 🎯 Introduction
+A modern daycare management SaaS platform.
 
-Petitspas est une application SaaS complète pour la gestion de crèches et garderies.
+KidCare is a full-stack application for daycare centers: enrollments, daily operations, parent communication, attendance, menus, and role-based dashboards for administrators, teachers, and parents.
 
-L’objectif du projet est de fournir une **plateforme moderne et centralisée** pour :
-- la direction / l’administration de la crèche,
-- les enseignants,
-- les parents.
-
-Elle permet de suivre les inscriptions, la présence des enfants, la communication avec les parents et la gestion quotidienne d’une crèche maternelle.
-
-Ce dépôt contient **deux dossiers uniquement** :
-- `frontend/` — application web (Next.js) : login, admin, enseignant, parent
-- `backend/` — API (NestJS + Prisma)
-
-> Ne pas utiliser d'autres copies (`creche-api`, `creche-frontend`) — elles ont été supprimées.
+Repository: https://github.com/Douaa1819/KidCare
 
 ---
 
-## ✨ Fonctionnalités principales
+## Main features
 
-### 1. Gestion des inscriptions
-- Formulaire d’inscription en plusieurs étapes pour les parents.
-- Saisie des informations de l’enfant, des parents, contact, allergies, etc.
-- Validation et suivi du statut d’inscription (candidature, en cours, active, rejetée).
-- Règlement intérieur intégré, avec case à cocher d’acceptation.
-
-### 2. Espace Admin
-- Tableau de bord admin.
-- Gestion des enfants inscrits (liste, filtres, recherche, profils détaillés).
-- Gestion des inscriptions (vue globale, détails des dossiers).
-- Gestion des classes (sections, capacités, tranches d’âge, activation/désactivation).
-- Gestion des utilisateurs (admin, enseignants, parents).
-
-### 3. Espace Enseignant
-- Accès à un **tableau de bord enseignant**.
-- Consultation de la liste des enfants par classe.
-- Saisie et suivi des présences des enfants.
-- Suivi de certains indicateurs du quotidien (ex : appétit, commentaire, etc. selon le modèle de données).
-
-### 4. Espace Parent
-- Tableau de bord parent après connexion.
-- Candidature d’inscription en ligne.
-- Suivi de l’état du dossier et de la situation de l’enfant.
-
-### 5. Authentification et rôles
-- Gestion des rôles : `ADMIN`, `ENSEIGNANT`, `PARENT`.
-- Système de connexion sécurisé (JWT côté API, token côté frontend).
-- Emails d’invitation envoyés aux utilisateurs avec mot de passe temporaire.
-
-### 6. Gestion des présences & suivi
-- Suivi des présences quotidiennes (présent, absent, justifié).
-- Enregistrement et consultation par classe / par date.
-
-### 7. Notifications par email
-- Envoi d’emails d’invitation aux enseignants et parents.
-- Géré via `nodemailer` côté API, avec configuration SMTP.
+- **Enrollment** — Multi-step parent registration, status tracking, internal regulations acceptance
+- **Admin dashboard** — Children, classes, users, inscriptions, menus, presences, platform settings
+- **Teacher dashboard** — Class view, daily attendance, activity summaries, photo uploads
+- **Parent dashboard** — Child overview, menus, events, daily summaries, photos
+- **Authentication** — JWT-based auth with roles: `SUPER_ADMIN`, `ADMIN`, `ENSEIGNANT`, `PARENT`
+- **Email notifications** — Invitations, password reset, enrollment confirmations (SMTP)
+- **Internationalization** — French and Arabic (next-intl)
+- **PWA** — Installable progressive web app support
 
 ---
 
-## 🧱 Architecture du projet
+## Architecture
 
-Le projet est structuré en **monorepo** avec deux dossiers principaux :
+Monorepo with two applications:
 
 ```text
-creche-saas/
-  ├─ frontend/        # Application web (Next.js, React, Tailwind)
-  ├─ backend/         # API backend (NestJS, Prisma, PostgreSQL ou équivalent)
-  └─ README.md          # Ce fichier
+KidCare/
+├── frontend/   # Next.js 16 web app (port 3001)
+├── backend/    # NestJS 11 API + Prisma (port 3000)
+└── README.md
 ```
 
-### frontend
-
-Application Next.js moderne, avec :
-- **Next.js 16** (App Router) et **React 19**.
-- **TypeScript**.
-- **Tailwind CSS** pour le design.
-- **next-intl** pour l’internationalisation (au moins français et arabe).
-- **React Hook Form** + **zod** pour les formulaires et la validation.
-- **TanStack React Query** pour la gestion des appels API et du cache.
-- **Zustand / Jotai** pour certains états globaux.
-
-Fonctionnalités côté frontend :
-- Layouts dédiés selon le rôle (admin, enseignant, parent).
-- Pages d’authentification et de connexion.
-- Pages d’inscription et tableau de bord parent.
-- Pages de gestion pour les admins (enfants, inscriptions, etc.).
-- Composants UI (sidebar, tableaux, formulaires, etc.).
-
-### backend
-
-API backend construite avec :
-- **NestJS 11** (framework Node.js orienté architecture modulaire).
-- **TypeScript**.
-- **Prisma** comme ORM pour la base de données.
-- **JWT** pour l’authentification.
-- **Class-validator / class-transformer** pour la validation des DTOs.
-- **Swagger** pour la documentation de l’API.
-
-Fonctionnalités côté API :
-- Modélisation des entités : utilisateurs, enfants, classes, inscriptions, présences, etc.
-- Routes sécurisées pour les opérations d’admin, parent et enseignant.
-- Gestion des statuts (inscription, présence, etc.).
-- Service d’email (`EmailService`) pour les invitations et notifications.
+| Layer    | Stack |
+|----------|-------|
+| Frontend | Next.js, React, TypeScript, Tailwind CSS, next-intl, React Query |
+| Backend  | NestJS, Prisma, PostgreSQL, JWT, Swagger, Nodemailer |
+| Database | PostgreSQL (via Docker or local install) |
 
 ---
 
-## 🚀 Démarrage rapide
+## Technologies
 
-### 1. Prérequis
+**Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, next-intl, TanStack Query, Zustand, Zod, Axios
 
-- **Node.js** (version récente LTS recommandée)
-- **npm** ou **yarn**
-- Une base de données compatible Prisma (ex. PostgreSQL) pour l’API.
+**Backend:** NestJS 11, Prisma 6, PostgreSQL, bcrypt, class-validator, Swagger, Helmet, Throttler
 
-### 2. Installation des dépendances
+---
 
-Dans le dossier racine `creche-saas`, installer séparément les dépendances du frontend et de l’API :
+## Prerequisites
 
-```bash
-# Terminal 1 — API (port 3000)
-cd backend
-pnpm install
-pnpm run start:dev
+- Node.js 20+ (LTS recommended)
+- pnpm
+- PostgreSQL (or Docker)
 
-# Terminal 2 — Frontend (port 3001)
-cd frontend
-pnpm install
-pnpm run dev
-```
+---
 
-Puis ouvrir **http://localhost:3001/fr** (login).
+## Environment variables
 
-### 3. Configuration des variables d’environnement
-
-#### Frontend (`frontend`)
-Créer un fichier `.env.local` (ou équivalent) avec par exemple :
+### Frontend (`frontend/.env.local`)
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000/api
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
-#### API (`backend`)
-Créer un fichier `.env` avec au minimum :
+### Backend (`backend/.env`)
+
+See `backend/.env.example` for the full list. Minimum:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/petitspas"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kidcare"
 NODE_ENV=development
+JWT_SECRET=your_dev_secret
 FRONTEND_URL=http://localhost:3001
-# Liens dans les emails (mot de passe oublié, invitation). En local, ne pas utiliser un domaine non déployé.
-
-# Config SMTP (email)
-SMTP_HOST=...
-SMTP_PORT=...
-SMTP_USER=...
-SMTP_PASS=...
-SMTP_FROM="noreply@votre-domaine.ma"
+CORS_ORIGINS=http://localhost:3001
+ADMIN_EMAIL=admin@demo.kidcare.app
+ADMIN_PASSWORD=change_me
 ```
 
-Adapter ces valeurs selon votre environnement.
+Optional SMTP (required for real email sending):
 
-### 4. Lancer l’API (backend)
+```env
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=noreply@kidcare.app
+SMTP_PASS=your-smtp-password
+SMTP_FROM="KidCare <noreply@kidcare.app>"
+```
 
-Depuis `backend` :
+---
+
+## Database setup
+
+### Option A — Docker
+
+From `backend/`:
 
 ```bash
-# Lancer en mode développement
-npm run start:dev
-
-# Optionnel : lancer le seed de données si configuré
-npm run seed
+docker compose up -d
 ```
 
-Par défaut, l’API écoute généralement sur `http://localhost:3000`.
+This starts PostgreSQL on port 5432 with database `creche`.
 
-### 5. Lancer le frontend
+### Option B — Local PostgreSQL
 
-Depuis `frontend` :
+Create a database and set `DATABASE_URL` in `backend/.env`.
+
+### Migrations & seed
 
 ```bash
-npm run dev
+cd backend
+pnpm install
+pnpm run prisma:generate
+pnpm run prisma:migrate:deploy
+pnpm run seed
 ```
 
-Le frontend sera accessible sur :
+Demo accounts after seed:
+
+| Role       | Email                          | Password (default)   |
+|------------|--------------------------------|----------------------|
+| Super Admin| admin@demo.kidcare.app         | `change_me`          |
+| Admin      | sophie@demo.kidcare.app        | `Sophie123!`         |
+| Teacher    | enseignant.sophie@test.com     | `Teacher123!`        |
+| Parent     | sophie.parent@demo.kidcare.app | `SophieParent123!`   |
+
+---
+
+## Backend setup
+
+```bash
+cd backend
+pnpm install
+pnpm run start:dev
+```
+
+- API: http://localhost:3000/api
+- Swagger: http://localhost:3000/api/docs
+- Health: http://localhost:3000/api/health
+
+---
+
+## Frontend setup
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Open http://localhost:3001/fr for the login page.
+
+---
+
+## Docker
+
+Database only (from `backend/docker-compose.yml`):
+
+```bash
+cd backend
+docker compose up -d
+```
+
+---
+
+## Testing
+
+**Backend:**
+
+```bash
+cd backend
+pnpm run test
+pnpm run test:e2e
+pnpm run lint
+```
+
+**Frontend:**
+
+```bash
+cd frontend
+pnpm run lint
+```
+
+---
+
+## Main user roles
+
+| Role          | Access |
+|---------------|--------|
+| SUPER_ADMIN   | Full platform control, settings, all modules |
+| ADMIN         | Daycare management: children, classes, users, menus, presences |
+| ENSEIGNANT    | Assigned classes, attendance, summaries, photos |
+| PARENT        | Own children: enrollment, menus, summaries, photos |
+
+---
+
+## Main modules
+
+- **Auth** — Login, JWT refresh, password reset
+- **Inscriptions** — Public registration form, admin review workflow
+- **Enfants** — Child profiles, class assignment, health info
+- **Classes** — Sections, capacity, age groups
+- **Presences** — Daily attendance tracking
+- **Menus** — Weekly meal planning
+- **Daily resumes** — Teacher daily summaries for parents
+- **Photos** — Activity photos per class
+- **Events** — Daycare events calendar
+- **Users** — Admin/teacher/parent account management
+- **Platform settings** — Branding, permissions, feature flags
+
+---
+
+## Project structure
 
 ```text
-http://localhost:3001
-```
+frontend/src/
+  app/[locale]/     # Localized routes (admin, teacher, parent)
+  components/       # UI components
+  lib/              # API client, i18n, utilities
+  messages/         # Translation files (fr, ar)
 
-Assurez-vous que `NEXT_PUBLIC_API_URL` pointe bien vers l’URL de l’API.
-
----
-
-## 🧩 Structure fonctionnelle (résumé)
-
-- **Auth & rôles** : gestion d’utilisateurs `ADMIN`, `ENSEIGNANT`, `PARENT`.
-- **Admin** :
-  - Gestion des enfants, des classes et des inscriptions.
-  - Accès à un tableau de bord global.
-- **Enseignant** :
-  - Vue de sa classe et des enfants.
-  - Saisie des présences et suivi du quotidien.
-- **Parent** :
-  - Candidature d’inscription en ligne.
-  - Suivi du dossier et des informations importantes.
-- **Communication** :
-  - Emails d’invitation et notifications automatisées.
-
----
-
-## 🛠️ Qualité, tests et lint
-
-### Frontend
-
-- **ESLint** + **Prettier** pour le linting et le formatage.
-- **Vitest** et **Testing Library** pour les tests.
-
-Commandes principales :
-
-```bash
-# Lancer le lint
-npm run lint
-
-# (Si configuré) Lancer les tests
-npm run test
-```
-
-### API
-
-- **ESLint** + **Prettier**.
-- **Jest** pour les tests unitaires et end-to-end.
-
-Commandes principales :
-
-```bash
-# Lint
-npm run lint
-
-# Tests unitaires
-npm run test
-
-# Tests e2e
-npm run test:e2e
+backend/src/
+  modules/          # NestJS feature modules
+  common/           # Shared services, guards, email templates
+  prisma/           # Schema, migrations, seed
 ```
 
 ---
 
-## 📌 Notes
+## License
 
-- Le nom de la crèche dans l’application est **Petitspas**.
-- Les adresses email techniques (`support@...`, `noreply@...`, etc.) peuvent être adaptées selon votre domaine réel.
-- Ce projet est pensé pour être extensible : ajout d’autres modules (facturation, messagerie, planning, etc.) possible à partir de cette base.
+Private portfolio / SaaS project.

@@ -49,7 +49,7 @@ async function main() {
 
   // 4. Parent login then try another child (if we have credentials)
   const parentLogin = await req('POST', '/auth/login-user', {
-    email: 'sophie.parent@wlw.ma',
+    email: 'sophie.parent@demo.kidcare.app',
     password: 'SophieParent123!',
   });
   const parentToken = (parentLogin.body as { accessToken?: string })?.accessToken;
@@ -81,7 +81,7 @@ async function main() {
 
   // 6. Admin cannot hit platform without super admin
   const adminLogin = await req('POST', '/auth/login-user', {
-    email: 'sophie@wlw.ma',
+    email: 'sophie@demo.kidcare.app',
     password: 'Sophie123!',
   });
   const adminToken = (adminLogin.body as { accessToken?: string })?.accessToken;

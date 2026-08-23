@@ -20,7 +20,7 @@
     "a11y": {
       "changeLanguage": "Changer de langue",
       "language": "Langue",
-      "logoAlt": "Logo PetitsPas"
+      "logoAlt": "Logo KidCare"
     }
   },
   "roles": {
@@ -98,7 +98,7 @@
     },
     "dashboard": {
       "title": "Dashboard Parent",
-      "subtitle": "Bienvenue sur PetitsPas"
+      "subtitle": "Bienvenue sur KidCare"
     },
     "tabs": {
       "overview": "Vue d'ensemble",
@@ -361,14 +361,14 @@
     }
   },
   "notFound": {
-    "title": "Erreur 404 — PetitsPas",
+    "title": "Erreur 404 — KidCare",
     "headline": "Oups ! Cette page a fait un faux pas",
     "description": "La page que vous cherchez n'existe pas, a été déplacée ou n'est plus disponible.",
     "backHome": "Retour à l'accueil",
     "hint": "Pas de panique — on vous ramène sur le bon chemin."
   },
   "home": {
-    "title": "PetitsPas",
+    "title": "KidCare",
     "subtitle": "Plateforme complète de gestion pour crèches et garderies",
     "adminSection": "Pour l'administration",
     "adminDescription": "Gérez les enfants, inscriptions, présences et facturation",
@@ -378,10 +378,10 @@
     "inscription": "Inscription",
     "invalidLogin": "Email ou mot de passe incorrect",
     "forgotPasswordLink": "Mot de passe oublié ?",
-    "forgotPasswordLinkClass": "text-xs font-semibold text-[#FF6F61] hover:text-[#e45f54] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
+    "forgotPasswordLinkClass": "text-xs font-semibold text-[#8B5CF6] hover:text-[#6D28D9] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
     "emailLabel": "Email",
     "passwordLabel": "Mot de passe",
-    "emailPlaceholder": "exemple@thepetitspas.com",
+    "emailPlaceholder": "exemple@kidcare.app",
     "passwordPlaceholder": "••••••••",
     "submit": "Se connecter",
     "submitting": "Connexion…",
@@ -739,7 +739,7 @@
       "next": "Suivant",
       "pageOf": "Page {page} / {totalPages}",
       "printTitle": "Présences",
-      "printHeading": "PetitsPas — Présences",
+      "printHeading": "KidCare — Présences",
       "printPeriod": "Période : {from} → {to}",
       "apiStatus": {
         "Present": "Présent",
@@ -851,11 +851,11 @@
       "capacityChildren": "{count} enfants",
       "emptyState": "Aucune information renseignée pour le moment.",
       "fillInfo": "Renseigner les informations",
-      "placeholderName": "Crèche PetitsPas",
+      "placeholderName": "KidCare Daycare",
       "placeholderAddress": "12 rue des Enfants, Casablanca",
       "placeholderPhone": "+212 522 000 000",
-      "placeholderEmail": "contact@petitspas.ma",
-      "placeholderWebsite": "https://petitspas.ma",
+      "placeholderEmail": "contact@kidcare.app",
+      "placeholderWebsite": "https://kidcare.app",
       "placeholderHours": "Lun–Ven : 07h30 – 18h00",
       "placeholderDescription": "Courte description de la crèche…",
       "hoursHint": "Sélectionnez un jour et ajoutez une ou plusieurs plages horaires (ex. 09:00–12:00 et 14:00–18:00).",

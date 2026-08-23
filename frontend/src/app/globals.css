@@ -4,76 +4,81 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Official Petitspas design tokens */
+  /* Official KidCare design tokens */
   --background: #ffffff;
   --foreground: #1a1a1a;
   --card: #ffffff;
   --card-foreground: #1a1a1a;
 
-  --pp-primary: #aedff7;
-  --pp-secondary: #b8e986;
-  --pp-accent: #ff6f61;
+  --pp-primary: #8b5cf6;
+  --pp-secondary: #d1fae5;
+  --pp-accent: #8b5cf6;
 
-  --primary: #aedff7;
-  --primary-foreground: #1a1a1a;
-  --primary-light: #eef8fc;
-  --primary-hover: #8ecde8;
-  --primary-active: #7bc0df;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --primary-light: #ede9fe;
+  --primary-hover: #6d28d9;
+  --primary-active: #6d28d9;
 
-  --petitspas-blue: #aedff7;
-  --petitspas-blue-soft: #f4fbfe;
-  --petitspas-blue-fill: #dff0fa;
-  --petitspas-blue-soft-bg: rgba(174, 223, 247, 0.35);
-  --petitspas-blue-text: #3d7a98;
-  --petitspas-blue-accent: #7ec8e3;
-  --petitspas-blue-gradient-top: #fafdff;
-  --petitspas-summer-warm: #fff8f0;
-  --petitspas-summer-green: #f5faf0;
+  --kidcare-blue: #8b5cf6;
+  --kidcare-blue-soft: #ece9fe;
+  --kidcare-blue-fill: #ede9fe;
+  --kidcare-blue-soft-bg: rgba(139, 92, 246, 0.15);
+  --kidcare-blue-text: #6d28d9;
+  --kidcare-blue-accent: #a78bfa;
+  --kidcare-blue-gradient-top: #f5f3ff;
+  --kidcare-summer-warm: #ffedd5;
+  --kidcare-summer-green: #d1fae5;
 
-  --secondary: #b8e986;
+  --pastel-blue: #e0f2fe;
+  --pastel-mint: #d1fae5;
+  --pastel-peach: #ffedd5;
+  --pastel-rose: #ffe4e6;
+
+  --secondary: #d1fae5;
   --secondary-foreground: #1a1a1a;
-  --secondary-light: #edf8e0;
-  --secondary-hover: #a5d972;
-  --secondary-active: #92c85e;
+  --secondary-light: #ecfdf5;
+  --secondary-hover: #a7f3d0;
+  --secondary-active: #6ee7b7;
 
-  --accent: #ff6f61;
+  --accent: #8b5cf6;
   --accent-foreground: #ffffff;
-  --accent-hover: #f05f51;
-  --accent-active: #e55448;
+  --accent-hover: #6d28d9;
+  --accent-active: #6d28d9;
   --accent-ring: color-mix(in srgb, var(--accent) 40%, transparent);
 
-  --auth-soft-orange: color-mix(in srgb, var(--pp-accent) 14%, white);
-  --auth-soft-green: color-mix(in srgb, var(--pp-secondary) 22%, white);
-  --auth-soft-blue: color-mix(in srgb, var(--pp-primary) 22%, white);
-  --auth-accent: var(--pp-accent);
+  --auth-soft-orange: #ede9fe;
+  --auth-soft-green: #d1fae5;
+  --auth-soft-blue: #e0f2fe;
+  --auth-accent: var(--accent);
   --auth-accent-hover: var(--accent-hover);
-  --auth-accent-soft: color-mix(in srgb, var(--pp-accent) 12%, white);
+  --auth-accent-soft: color-mix(in srgb, var(--accent) 12%, white);
   --auth-accent-ring: var(--accent-ring);
-  --auth-gray: #faf9f7;
+  --auth-gray: #f5f3ff;
   --auth-text: #1f2937;
   --auth-text-muted: #64748b;
-  --auth-coral: var(--pp-accent);
-  --auth-border: #ebe8e4;
-  --auth-link: #5c6658;
-  --auth-link-hover: #4a5347;
-  --auth-link-blue: var(--petitspas-blue-text);
-  --auth-link-blue-hover: #2f6578;
-  --auth-link-green: #5a8a42;
-  --auth-link-green-hover: #4a7c2e;
+  --auth-coral: var(--accent);
+  --auth-border: #e9e5ff;
+  --auth-link: #6d28d9;
+  --auth-link-hover: #5b21b6;
+  --auth-link-blue: #7c3aed;
+  --auth-link-blue-hover: #6d28d9;
+  --auth-link-green: #059669;
+  --auth-link-green-hover: #047857;
 
   --muted: #f5f5f5;
   --muted-foreground: #5c5c5c;
 
-  --destructive: #ff6f61;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --destructive-hover: #f05f51;
-  --destructive-active: #e55448;
+  --destructive-hover: #dc2626;
+  --destructive-active: #b91c1c;
   --destructive-ring: color-mix(in srgb, var(--destructive) 42%, transparent);
 
-  --success: #b8e986;
-  --success-foreground: #1a1a1a;
-  --success-hover: #a5d972;
-  --success-active: #92c85e;
+  --success: #34d399;
+  --success-foreground: #064e3b;
+  --success-hover: #10b981;
+  --success-active: #059669;
   --success-ring: color-mix(in srgb, var(--success) 45%, transparent);
 
   --warning: #f59e0b;
@@ -83,29 +88,29 @@
   --warning-text: #b45309;
   --warning-ring: color-mix(in srgb, var(--warning) 40%, transparent);
 
-  --info-text: #3d7a98;
-  --info-border: #aedff7;
-  --info-soft: #eef8fc;
+  --info-text: #6d28d9;
+  --info-border: #c4b5fd;
+  --info-soft: #e0f2fe;
   --info-ring: color-mix(in srgb, var(--pp-primary) 45%, transparent);
 
-  --status-review-bg: #fff4e6;
-  --status-review-text: #b45309;
-  --status-review-border: #fcd9a0;
-  --status-progress-bg: #eef8fc;
-  --status-progress-text: #3d7a98;
-  --status-progress-border: #aedff7;
-  --status-accepted-bg: #edf8e0;
-  --status-accepted-text: #4a7c2e;
-  --status-accepted-border: #b8e986;
-  --status-rejected-bg: #fff0ee;
-  --status-rejected-text: #c9564a;
-  --status-rejected-border: #ff6f61;
+  --status-review-bg: var(--pastel-peach);
+  --status-review-text: #c2410c;
+  --status-review-border: #fdba74;
+  --status-progress-bg: #ede9fe;
+  --status-progress-text: #6d28d9;
+  --status-progress-border: #c4b5fd;
+  --status-accepted-bg: var(--pastel-mint);
+  --status-accepted-text: #047857;
+  --status-accepted-border: #6ee7b7;
+  --status-rejected-bg: var(--pastel-rose);
+  --status-rejected-text: #be123c;
+  --status-rejected-border: #fda4af;
   --status-neutral-bg: #f5f5f5;
   --status-neutral-text: #5c5c5c;
   --status-neutral-border: #d4d4d4;
-  --status-present-bg: #edf8e0;
-  --status-present-text: #4a7c2e;
-  --status-present-border: #b8e986;
+  --status-present-bg: var(--pastel-mint);
+  --status-present-text: #047857;
+  --status-present-border: #6ee7b7;
 
   --btn-primary-ring: color-mix(in srgb, var(--primary) 50%, transparent);
   --btn-outline-hover-bg: var(--muted);
@@ -121,19 +126,19 @@
   --popover-foreground: #1a1a1a;
   --ring: color-mix(in srgb, var(--pp-primary) 55%, transparent);
 
-  --chart-1: #aedff7;
-  --chart-2: #b8e986;
-  --chart-3: #ff6f61;
-  --chart-4: #f5f5f5;
+  --chart-1: #8b5cf6;
+  --chart-2: #34d399;
+  --chart-3: #f59e0b;
+  --chart-4: #e0f2fe;
   --chart-5: #666666;
 
   --radius: 0.625rem;
-  --sidebar: #f5f5f5;
+  --sidebar: #faf5ff;
   --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #aedff7;
-  --sidebar-primary-foreground: #1a1a1a;
-  --sidebar-accent: #b8e986;
-  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-primary: #8b5cf6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ede9fe;
+  --sidebar-accent-foreground: #5b21b6;
   --sidebar-border: #d4d4d4;
   --sidebar-ring: color-mix(in srgb, var(--muted-foreground) 28%, transparent);
 }
@@ -207,13 +212,13 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-light: var(--primary-light);
   --color-primary-hover: var(--primary-hover);
-  --color-pp-border: var(--petitspas-blue);
-  --color-pp-soft: var(--petitspas-blue-soft);
-  --color-pp-fill: var(--petitspas-blue-fill);
-  --color-pp-text: var(--petitspas-blue-text);
-  --color-pp-accent: var(--petitspas-blue-accent);
-  --color-pp-warm: var(--petitspas-summer-warm);
-  --color-pp-green-soft: var(--petitspas-summer-green);
+  --color-pp-border: var(--kidcare-blue);
+  --color-pp-soft: var(--kidcare-blue-soft);
+  --color-pp-fill: var(--kidcare-blue-fill);
+  --color-pp-text: var(--kidcare-blue-text);
+  --color-pp-accent: var(--kidcare-blue-accent);
+  --color-pp-warm: var(--kidcare-summer-warm);
+  --color-pp-green-soft: var(--kidcare-summer-green);
   --color-secondary-light: var(--secondary-light);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -253,21 +258,13 @@
     position: relative;
     min-height: 100dvh;
     overflow: hidden;
-    background-color: #ffffff;
-    background-image:
-      radial-gradient(ellipse 90% 70% at 8% 12%, var(--auth-soft-orange) 0%, transparent 58%),
-      radial-gradient(ellipse 80% 65% at 92% 18%, var(--auth-soft-blue) 0%, transparent 55%),
-      radial-gradient(ellipse 75% 60% at 50% 88%, var(--auth-soft-green) 0%, transparent 52%),
-      linear-gradient(
-        155deg,
-        #ffffff 0%,
-        var(--auth-soft-blue) 28%,
-        #ffffff 42%,
-        var(--auth-soft-green) 58%,
-        #ffffff 72%,
-        var(--auth-soft-orange) 86%,
-        #ffffff 100%
-      );
+    background-color: #ece9fe;
+    background-image: linear-gradient(
+      to bottom right,
+      #ede9fe 0%,
+      #f5f3ff 45%,
+      #e0e7ff 100%
+    );
     color: var(--auth-text);
   }
 
@@ -280,6 +277,18 @@
     border-radius: 50%;
     filter: blur(72px);
     opacity: 0.45;
+  }
+
+  .auth-blob-violet {
+    background: #ddd6fe;
+  }
+
+  .auth-blob-violet-soft {
+    background: #ede9fe;
+  }
+
+  .auth-blob-indigo {
+    background: #e0e7ff;
   }
 
   .auth-blob-orange {
@@ -388,9 +397,28 @@
 
   .auth-logo-ring {
     box-shadow:
-      0 6px 24px rgba(31, 41, 55, 0.05),
+      0 6px 24px rgba(91, 33, 182, 0.08),
       0 0 0 1px rgba(255, 255, 255, 0.95),
-      0 0 0 3px color-mix(in srgb, var(--pp-secondary) 35%, white);
+      0 0 0 3px color-mix(in srgb, var(--pp-primary) 25%, white);
+  }
+
+  .brand-wordmark {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 55%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .parent-primary-button {
+    background: var(--accent);
+    color: #ffffff;
+  }
+
+  .parent-primary-button:hover {
+    background: var(--accent-hover);
   }
 
   @keyframes auth-logo-enter {
@@ -450,14 +478,13 @@
   }
 
   .auth-card {
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--auth-border);
-    border-radius: 1rem;
+    background: #ffffff;
+    border: 1px solid #e9e5ff;
+    border-radius: 1.5rem;
     box-shadow:
-      0 2px 16px rgba(31, 41, 55, 0.04),
-      0 1px 2px rgba(31, 41, 55, 0.03);
-    padding: 1.5rem 1.75rem;
+      0 10px 15px -3px rgba(91, 33, 182, 0.1),
+      0 4px 6px -4px rgba(91, 33, 182, 0.08);
+    padding: 1.75rem 2rem;
   }
 
   @media (min-width: 640px) {

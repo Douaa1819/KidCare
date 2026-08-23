@@ -175,7 +175,8 @@ export default function ParentAccountPage({ params }: { params: Promise<{ locale
                 type="button"
                 onClick={() => void handleProfileSave()}
                 disabled={profileSaving}
-                className="w-full sm:w-auto bg-[#FF6F61] text-white hover:bg-[#FF6F61]/90"
+                className="w-full sm:w-auto"
+                variant="brand"
               >
                 {profileSaving ? t("account.saving") : t("account.saveProfile")}
               </Button>
@@ -213,7 +214,8 @@ export default function ParentAccountPage({ params }: { params: Promise<{ locale
             type="button"
             onClick={() => void handlePasswordChange()}
             disabled={passwordSaving}
-            className="w-full sm:w-auto bg-[#FF6F61] text-white hover:bg-[#FF6F61]/90"
+            variant="brand"
+            className="w-full sm:w-auto"
           >
             {passwordSaving ? "…" : t("profile.saveButton")}
           </Button>

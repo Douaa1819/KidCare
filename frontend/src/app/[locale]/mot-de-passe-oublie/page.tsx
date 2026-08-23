@@ -65,7 +65,6 @@ export default function ForgotPasswordPage({
       subtitle={t("subtitle")}
       backHref={`/${locale}`}
       backLabel={t("backToLogin")}
-      animateLogo
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         {error ? (

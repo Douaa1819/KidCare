@@ -1,4 +1,4 @@
-export const TEACHER_CLASS_STORAGE_KEY = "petitspas-teacher-selected-classe-id"
+export const TEACHER_CLASS_STORAGE_KEY = "kidcare-teacher-selected-classe-id"
 
 export type TeacherClasse = { id: string; nom: string }
 

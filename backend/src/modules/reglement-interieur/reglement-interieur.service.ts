@@ -53,9 +53,9 @@ export class ReglementInterieurService {
   }
 
   private getDefaultContent(): string {
-    return `## PetitsPas - Crèche Maternelle
+    return `## KidCare - Crèche Maternelle
 
-PetitsPas est une crèche maternelle qui accueille les enfants de la Pouponnière à la Moyenne-section. Les petits y trouveront un accueil bienveillant et chaleureux, entourés par des adultes passionnés et dévoués.
+KidCare est une plateforme moderne de gestion de crèche. Les enfants y trouvent un accueil bienveillant et chaleureux, entourés par des adultes passionnés et dévoués.
 
 ## Les horaires de l'école
 

@@ -1,4 +1,3 @@
-import Image from "next/image"
 import Link from "next/link"
 import { Footprints, Home, MapPinOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -6,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { LanguageSwitcher } from "@/components/ui/language-switcher"
 import type { Locale } from "@/lib/i18n/config"
 
-export type PetitspasNotFoundCopy = {
+export type KidCareNotFoundCopy = {
   title: string
   headline: string
   description: string
@@ -14,28 +13,27 @@ export type PetitspasNotFoundCopy = {
   hint: string
 }
 
-type PetitspasNotFoundProps = {
+type KidCareNotFoundProps = {
   locale: Locale
-  copy: PetitspasNotFoundCopy
+  copy: KidCareNotFoundCopy
 }
 
-export function PetitspasNotFound({ locale, copy }: PetitspasNotFoundProps) {
+export function KidCareNotFound({ locale, copy }: KidCareNotFoundProps) {
   const homeHref = `/${locale}`
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#AEDFF7]/35 via-[#FFF7ED] to-[#FF6F61]/20 flex items-center justify-center px-4 py-10">
-      {/* Decorative blobs */}
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100 flex items-center justify-center px-4 py-10">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-24 -left-16 h-72 w-72 rounded-full bg-[#AEDFF7]/40 blur-3xl"
+        className="pointer-events-none absolute -top-24 -left-16 h-72 w-72 rounded-full bg-violet-300/30 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/3 -right-20 h-64 w-64 rounded-full bg-[#B8E986]/35 blur-3xl"
+        className="pointer-events-none absolute top-1/3 -right-20 h-64 w-64 rounded-full bg-purple-200/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-16 left-1/4 h-56 w-56 rounded-full bg-[#FF6F61]/20 blur-3xl"
+        className="pointer-events-none absolute -bottom-16 left-1/4 h-56 w-56 rounded-full bg-indigo-200/30 blur-3xl"
       />
 
       <div className="relative z-10 w-full max-w-lg">
@@ -44,35 +42,29 @@ export function PetitspasNotFound({ locale, copy }: PetitspasNotFoundProps) {
         </div>
 
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-5 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-lg ring-4 ring-white/80">
-            <Image src="/Group 13.svg" alt="PetitsPas" width={80} height={80} priority />
-          </div>
-
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700/80">
-            PetitsPas
-          </p>
+          <p className="brand-wordmark">KidCare</p>
         </div>
 
-        <Card className="overflow-hidden rounded-3xl border-2 border-[#AEDFF7]/60 bg-white/90 p-0 shadow-xl backdrop-blur-sm">
-          <div className="border-b border-[#AEDFF7]/40 bg-gradient-to-r from-[#AEDFF7]/25 via-white to-[#FF6F61]/10 px-6 py-8 text-center">
+        <Card className="overflow-hidden rounded-3xl border border-violet-200/60 bg-white p-0 shadow-lg">
+          <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-purple-50 px-6 py-8 text-center">
             <div className="relative mx-auto mb-4 flex w-fit items-center justify-center">
               <span
-                className="select-none bg-gradient-to-br from-sky-600 via-sky-500 to-[#FF6F61] bg-clip-text text-8xl font-black leading-none tracking-tighter text-transparent"
+                className="select-none bg-gradient-to-br from-violet-700 via-purple-600 to-indigo-500 bg-clip-text text-8xl font-black leading-none tracking-tighter text-transparent"
                 aria-hidden
               >
                 404
               </span>
               <MapPinOff
-                className="absolute -right-8 -top-2 h-8 w-8 text-[#FF6F61] opacity-90"
+                className="absolute -right-8 -top-2 h-8 w-8 text-violet-500 opacity-90"
                 aria-hidden
               />
             </div>
 
-            <div className="mb-4 flex items-center justify-center gap-2 text-sky-600/70" aria-hidden>
+            <div className="mb-4 flex items-center justify-center gap-2 text-violet-500/70" aria-hidden>
               <Footprints className="h-4 w-4 rotate-[-12deg]" />
               <Footprints className="h-5 w-5" />
               <Footprints className="h-4 w-4 rotate-[12deg] opacity-40" />
-              <span className="mx-1 text-lg text-[#FF6F61]">?</span>
+              <span className="mx-1 text-lg text-purple-500">?</span>
             </div>
 
             <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{copy.headline}</h1>

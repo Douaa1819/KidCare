@@ -1,107 +1,43 @@
-# 🎨 Crèche Frontend - Next.js + Tailwind
+# KidCare Frontend
 
-Frontend moderne pour l'application Crèche WLW.
+Next.js frontend for the KidCare daycare management platform.
 
-## 🚀 Stack Technologique
+## Stack
 
-- **Next.js 16** - Framework React
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **Zustand** - State management
-- **Axios** - HTTP client
-- **js-cookie** - Cookie management
+- Next.js 16 (App Router)
+- React 19 + TypeScript
+- Tailwind CSS 4
+- next-intl (FR/AR)
+- TanStack React Query
+- React Hook Form + Zod
 
-## 📦 Installation
+## Setup
 
-### 1. Installer les dépendances
 ```bash
-npm install
-```
-
-### 2. Configurer l'environnement
-```bash
+pnpm install
 cp .env.local.example .env.local
+pnpm dev
 ```
 
-Éditer `.env.local`:
-```
+Open [http://localhost:3001/fr](http://localhost:3001/fr)
+
+## Environment
+
+```env
 NEXT_PUBLIC_API_URL=http://localhost:3000/api
-NEXT_PUBLIC_APP_NAME=Crèche WLW
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
-### 3. Démarrer le serveur
-```bash
-npm run dev
-```
-
-Ouvrir [http://localhost:3001](http://localhost:3001)
-
-## 📁 Structure du Projet
-
-```
-frontend/
-├── app/                    # Pages Next.js
-├── lib/
-│   ├── api.ts             # Client API
-│   └── store.ts           # Zustand store
-├── components/            # Composants réutilisables
-├── .env.local.example     # Variables d'environnement
-└── package.json
-```
-
-## 🔐 Authentification
-
-```typescript
-import { useAuthStore } from '@/lib/store';
-
-const { loginAdmin, loginUser, logout } = useAuthStore();
-
-// Login Admin
-await loginAdmin('admin@wlw.ma', 'change_me');
-
-// Login User
-await loginUser('user@example.com', 'password');
-
-// Logout
-logout();
-```
-
-## 🌐 Consommer l'API
-
-```typescript
-import { apiClient } from '@/lib/api';
-
-// Créer une classe
-await apiClient.createClass({
-  nom: 'Petite Section',
-  trancheAge: 'PS',
-  capacite: 20,
-  active: true,
-});
-
-// Lister les classes
-const classes = await apiClient.listClasses();
-
-// Voir classe avec enfants
-const classData = await apiClient.getClassWithChildren('cls_1');
-```
-
-## 🛠️ Commandes
+## Commands
 
 ```bash
-npm run dev      # Développement
-npm run build    # Build
-npm start        # Production
-npm run lint     # Linting
+pnpm dev      # Development (port 3001)
+pnpm build    # Production build
+pnpm start    # Production server
+pnpm lint     # ESLint
 ```
 
-## 🔗 Backend
+## Backend
 
-- API: [http://localhost:3000/api](http://localhost:3000/api)
-- Swagger: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- Guide: `backend/API_COMPLETE_GUIDE.md`
-
----
-
-**Prêt à développer!** 🚀
+- API: http://localhost:3000/api
+- Swagger: http://localhost:3000/api/docs

@@ -1,4 +1,4 @@
-# PetitsPas — Documentation Technique
+# KidCare — Documentation Technique
 
 > Application SaaS de gestion de crèche — version 2026
 
@@ -20,7 +20,7 @@
 
 ## 1. Présentation générale
 
-**PetitsPas** est une application web SaaS (Software as a Service) destinée à la gestion quotidienne d'une crèche. Elle couvre :
+**KidCare** est une application web SaaS (Software as a Service) destinée à la gestion quotidienne d'une crèche. Elle couvre :
 
 - L'inscription des enfants et la gestion des dossiers familiaux
 - Le suivi des présences (arrivée, départ, statut)
@@ -442,11 +442,11 @@ JWT_EXPIRES_IN=7d
 # SMTP (envoi d'emails)
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USER=noreply@petitspas.com
+SMTP_USER=noreply@kidcare.app
 SMTP_PASS=mot_de_passe_smtp
 
 # URL du frontend (pour les liens dans les emails)
-FRONTEND_URL=https://petitspas.vercel.app
+FRONTEND_URL=http://localhost:3001
 
 # Environnement
 NODE_ENV=production
@@ -457,13 +457,13 @@ PORT=3000
 
 ```env
 # URL de l'API backend
-NEXT_PUBLIC_API_URL=https://petitspas-api.onrender.com
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
 ---
 
-*Documentation — PetitsPas SaaS — Mars 2026*
-Modification -Revue Phase 1 de PetitsPas.
+*Documentation — KidCare SaaS — Mars 2026*
+Modification -Revue Phase 1 de KidCare.
 
 changement  . Sécurité & dépendances (frontend)
 Montée de version axios (ex. ^1.14.0).

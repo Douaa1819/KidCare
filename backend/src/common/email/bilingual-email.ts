@@ -5,9 +5,9 @@ import {
   emailParagraph,
   emailTag,
   escapeHtml,
-  wrapPetitspasEmail,
+  wrapKidCareEmail,
   type EmailCta,
-} from './petitspas-email-layout';
+} from './kidcare-email-layout';
 
 /** Subject line: French | Arabic */
 export function bilingualEmailSubject(fr: string, ar: string): string {
@@ -42,7 +42,7 @@ export function wrapBilingualEmail(params: {
     </div>
   `;
 
-  return wrapPetitspasEmail({
+  return wrapKidCareEmail({
     title: params.titleFr,
     subtitle: params.titleAr,
     innerHtml: inner,

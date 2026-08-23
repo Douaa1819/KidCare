@@ -137,7 +137,7 @@ function buildMenusStateFromApi(rawMenus: unknown[]): {
 
 function ParentNoClassEmpty({ message }: { message: string }) {
   return (
-    <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
+    <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
       <CardContent className="py-10 px-4 text-center text-sm text-muted-foreground leading-relaxed">
         {message}
       </CardContent>
@@ -1164,7 +1164,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
           ))}
         </div>
         {resume.observations && resume.observations.length > 0 && (
-          <div className="rounded-xl p-3 border" style={{ background: "rgba(174,223,247,0.2)", borderColor: "#AEDFF7" }}>
+          <div className="rounded-xl p-3 border" style={{ background: "rgba(139,92,246,0.2)", borderColor: "#C4B5FD" }}>
             <p className="text-xs font-medium mb-1" style={{ color: "#1A1A1A" }}>{t("ui.observations")}</p>
             <ul className="text-sm text-gray-600 space-y-0.5">
               {resume.observations.map((obs, i) => <li key={i}>• {obs}</li>)}
@@ -1183,9 +1183,9 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
       <Card
         id="parent-class-activity-photos"
         className="border shadow-sm rounded-2xl scroll-mt-24 md:scroll-mt-32"
-        style={{ borderColor: "#AEDFF7" }}
+        style={{ borderColor: "#C4B5FD" }}
       >
-        <CardHeader className="pb-3 border-b" style={{ borderColor: "#AEDFF7" }}>
+        <CardHeader className="pb-3 border-b" style={{ borderColor: "#C4B5FD" }}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <CardTitle className="text-sm font-bold text-gray-900">{t("ui.classActivitiesTitle")}</CardTitle>
@@ -1375,8 +1375,8 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
       <ParentClassPhotosCard />
 
       {/* Résumé du jour (même présentation que la saisie enseignant : 4 cartes) */}
-      <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
-        <CardHeader className="pb-3 border-b" style={{ borderColor: "#AEDFF7" }}>
+      <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
+        <CardHeader className="pb-3 border-b" style={{ borderColor: "#C4B5FD" }}>
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-sm font-bold text-gray-900">{t("ui.dailySummaryTitle")}</CardTitle>
             <button
@@ -1406,8 +1406,8 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
 
       {/* Class message — only when selected child has a class */}
       {activeClasseId ? (
-        <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
-          <CardHeader className="pb-3 border-b" style={{ borderColor: "#AEDFF7" }}>
+        <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
+          <CardHeader className="pb-3 border-b" style={{ borderColor: "#C4B5FD" }}>
             <CardTitle className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
               <MessageSquare className="h-4 w-4 text-sky-600" aria-hidden />
               {t("ui.messageClassTitle")}
@@ -1425,7 +1425,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
 
       {/* Events preview */}
       {visibleUpcomingEvents.length > 0 && (
-        <Card className="overflow-hidden border shadow-sm rounded-3xl" style={{ borderColor: "#AEDFF7", background: "linear-gradient(180deg, #F7FCFF 0%, #FFFFFF 100%)" }}>
+        <Card className="overflow-hidden border shadow-sm rounded-3xl" style={{ borderColor: "#C4B5FD", background: "linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 100%)" }}>
           <CardHeader className="pb-3 border-b" style={{ borderColor: "#E0F2FE" }}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
@@ -1434,7 +1434,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                 </span>
                 {t("ui.upcomingEventsTitle")}
               </CardTitle>
-              <button type="button" onClick={() => setActiveTab("events")} className="parent-soft-button rounded-full px-2.5 py-1 text-xs font-semibold" style={{ color: "#FF6F61" }}>{t("ui.seeAll")}</button>
+              <button type="button" onClick={() => setActiveTab("events")} className="parent-soft-button rounded-full px-2.5 py-1 text-xs font-semibold" style={{ color: "#8B5CF6" }}>{t("ui.seeAll")}</button>
             </div>
           </CardHeader>
           <CardContent className="pt-3 space-y-2.5">
@@ -1446,7 +1446,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                 className="parent-card-action flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm"
                 style={{ border: "1px solid #C5E8F7" }}
               >
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black flex-shrink-0 text-center leading-tight" style={{ background: "#AEDFF7", color: "#1A1A1A" }}>{ev.date}</div>
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black flex-shrink-0 text-center leading-tight" style={{ background: "#C4B5FD", color: "#1A1A1A" }}>{ev.date}</div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-gray-900">{ev.title}</p>
                   {ev.time && (
@@ -1470,7 +1470,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
     if (!child?.id) {
       return (
         <div className="px-4 pt-4 pb-4 space-y-4">
-          <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
+          <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
             <CardContent className="py-10 px-4 text-center text-sm text-muted-foreground leading-relaxed">
               {t("ui.featureRequiresChild")}
             </CardContent>
@@ -1585,7 +1585,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
     if (!child?.id) {
       return (
         <div className="px-4 pt-4 pb-4 space-y-4">
-          <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
+          <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
             <CardContent className="py-10 px-4 text-center text-sm text-muted-foreground leading-relaxed">
               {t("ui.featureRequiresChild")}
             </CardContent>
@@ -1621,8 +1621,8 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
         </div>
 
         {/* Résumé + présence pour le jour choisi (date locale, pas UTC) */}
-        <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
-          <CardHeader className="pb-3 border-b" style={{ borderColor: "#AEDFF7" }}>
+        <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
+          <CardHeader className="pb-3 border-b" style={{ borderColor: "#C4B5FD" }}>
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-shrink-0">
                 <CardTitle className="text-sm font-bold text-gray-900">{t("ui.dailySummaryTitle")}</CardTitle>
@@ -1649,7 +1649,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 {!isPresenceDayToday && (
-                  <button type="button" onClick={goPresenceToday} className="ml-1 text-xs hover:underline whitespace-nowrap" style={{ color: "#FF6F61" }}>
+                  <button type="button" onClick={goPresenceToday} className="ml-1 text-xs hover:underline whitespace-nowrap" style={{ color: "#8B5CF6" }}>
                     {t("ui.backToToday")}
                   </button>
                 )}
@@ -2022,8 +2022,8 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
         <div
           className="parent-card-action rounded-2xl p-3"
           style={{
-            background: isMenuToday ? "rgba(174,223,247,0.25)" : compact ? "#FFFFFF" : "rgba(174,223,247,0.08)",
-            border: `1px solid ${isMenuToday ? "#AEDFF7" : compact ? "#E5E7EB" : "rgba(174,223,247,0.35)"}`,
+            background: isMenuToday ? "rgba(139,92,246,0.25)" : compact ? "#FFFFFF" : "rgba(139,92,246,0.08)",
+            border: `1px solid ${isMenuToday ? "#C4B5FD" : compact ? "#E5E7EB" : "rgba(139,92,246,0.35)"}`,
           }}
         >
           <p className="text-xs font-bold mb-2 capitalize flex items-center gap-1.5" style={{ color: isMenuToday ? "#1A73A7" : "#1A1A1A" }}>
@@ -2060,8 +2060,8 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
         ) : null}
 
         {/* Today's menu */}
-        <Card className="shadow-md rounded-2xl overflow-hidden" style={{ border: "2px solid #AEDFF7", background: "linear-gradient(to bottom, rgba(174,223,247,0.12), white)" }}>
-          <CardHeader className="pb-3 border-b" style={{ borderColor: "#AEDFF7" }}>
+        <Card className="shadow-md rounded-2xl overflow-hidden" style={{ border: "2px solid #C4B5FD", background: "linear-gradient(to bottom, rgba(139,92,246,0.12), white)" }}>
+          <CardHeader className="pb-3 border-b" style={{ borderColor: "#C4B5FD" }}>
             <CardTitle className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <Utensils className="w-4 h-4 shrink-0" aria-hidden /> {t("ui.menuTodayTitle")}
               {todayMenu && <span className="ml-auto text-xs font-normal text-gray-400">{new Date(`${todayMenu.date}T12:00:00`).toLocaleDateString(dateLocale, { weekday: "long", day: "2-digit", month: "long" })}</span>}
@@ -2071,7 +2071,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
             {todayMenu ? (
               <div className="space-y-2">
                 {MENU_ROWS.filter(r => todayMenu[r.key]).map(row => (
-                  <div key={row.key} className="flex items-start gap-3 py-2.5 border-t first:border-0 first:pt-0" style={{ borderColor: "rgba(174,223,247,0.5)" }}>
+                  <div key={row.key} className="flex items-start gap-3 py-2.5 border-t first:border-0 first:pt-0" style={{ borderColor: "rgba(139,92,246,0.5)" }}>
                     <span className="flex-shrink-0 leading-none mt-0.5">{row.icon}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-1.5">
@@ -2094,8 +2094,8 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
         </Card>
 
         {/* Week menus — current week only */}
-        <Card className="border shadow-sm rounded-2xl overflow-hidden" style={{ borderColor: "#AEDFF7" }}>
-          <CardHeader className="pb-3 border-b" style={{ borderColor: "#AEDFF7" }}>
+        <Card className="border shadow-sm rounded-2xl overflow-hidden" style={{ borderColor: "#C4B5FD" }}>
+          <CardHeader className="pb-3 border-b" style={{ borderColor: "#C4B5FD" }}>
             <CardTitle className="text-sm font-bold text-gray-900">
               <ClipboardList className="w-4 h-4 shrink-0 inline-block align-middle" aria-hidden /> {t("ui.menuWeekTitle")}
               <span className="ml-2 text-[11px] font-normal text-gray-400">
@@ -2274,7 +2274,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
         className={`parent-card-action flex w-full cursor-pointer items-start gap-3 rounded-2xl bg-white p-3 text-left shadow-sm ${past ? "opacity-90" : ""}`}
         style={{ border: past ? "1px solid #E5E7EB" : "1px solid #C5E8F7" }}
       >
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xs font-black flex-shrink-0 text-center leading-tight" style={{ background: past ? "#F3F4F6" : "#AEDFF7", color: "#1A1A1A" }}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xs font-black flex-shrink-0 text-center leading-tight" style={{ background: past ? "#F3F4F6" : "#C4B5FD", color: "#1A1A1A" }}>
           {ev.date}
         </div>
         <div className="flex-1 min-w-0">
@@ -2346,7 +2346,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                   }
                   className={`min-h-[5.5rem] p-1.5 text-left transition-colors ${
                     isToday ? "bg-sky-50/80 ring-1 ring-inset ring-sky-200" : "bg-white"
-                  } ${hasEvents ? "cursor-pointer hover:bg-sky-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6F61]/40" : ""}`}
+                  } ${hasEvents ? "cursor-pointer hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6]/40" : ""}`}
                 >
                   <div className={`mb-1 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${isToday ? "bg-sky-600 text-white" : "text-gray-800"}`}>
                     {day}
@@ -2373,7 +2373,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
                           e.stopPropagation()
                           openParentEventDay(dayEvents)
                         }}
-                        className="w-full rounded-md px-1 py-0.5 text-left text-[10px] font-semibold text-[#FF6F61] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6F61]/40"
+                        className="w-full rounded-md px-1 py-0.5 text-left text-[10px] font-semibold text-[#8B5CF6] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6]/40"
                       >
                         +{dayEvents.length - 2} {locale === "ar" ? "أخرى" : "autres"}
                       </button>
@@ -2653,7 +2653,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
 
   // ─── Main render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen pb-20 md:pb-8 overflow-x-hidden" style={{ background: "linear-gradient(180deg, #F7FCFF 0%, #FFFFFF 34%, #FFFFFF 100%)" }}>
+    <div className="min-h-screen pb-20 md:pb-8 overflow-x-hidden" style={{ background: "linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 34%, #FFFFFF 100%)" }}>
       <style>{`
         .parent-primary-button,
         .parent-danger-button,
@@ -2682,14 +2682,14 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
 
           .parent-soft-button:hover {
             background-color: rgba(174, 223, 247, 0.28);
-            border-color: #AEDFF7;
+            border-color: #C4B5FD;
             color: #1A73A7;
             box-shadow: 0 1px 6px rgba(15, 23, 42, 0.06);
           }
 
           .parent-icon-button:hover {
             background-color: rgba(174, 223, 247, 0.22);
-            border-color: #AEDFF7;
+            border-color: #C4B5FD;
             color: #1A73A7;
             box-shadow: 0 1px 6px rgba(15, 23, 42, 0.06);
           }
@@ -2753,7 +2753,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
             return (
               <button key={item.id} type="button" onClick={() => setActiveTab(item.id)}
                 className="parent-tab-button flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium"
-                style={isActive ? { background: "#AEDFF7", color: "#1A1A1A", boxShadow: "0 2px 10px rgba(26, 115, 167, 0.14)" } : { color: "#6B7280" }}>
+                style={isActive ? { background: "#C4B5FD", color: "#1A1A1A", boxShadow: "0 2px 10px rgba(26, 115, 167, 0.14)" } : { color: "#6B7280" }}>
                 {item.icon}<span>{item.label}</span>
               </button>
             )
@@ -2825,7 +2825,7 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
           </div>
           ) : (
             <div className="px-4 pt-2 pb-4">
-              <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#AEDFF7" }}>
+              <Card className="border shadow-sm rounded-2xl" style={{ borderColor: "#C4B5FD" }}>
                 <CardContent className="py-10 px-4 text-center text-sm text-muted-foreground leading-relaxed">
                   {t("ui.featureRequiresChild")}
                 </CardContent>
@@ -2875,10 +2875,10 @@ export default function ParentDashboard({ params }: { params: Promise<{ locale: 
             return (
               <button key={item.id} type="button" onClick={() => setActiveTab(item.id)}
                 className={"parent-tab-button flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl "+(isActive?"":"text-gray-400")}
-                style={isActive ? { color: "#FF6F61", background: "#FFF4F2", boxShadow: "inset 0 0 0 1px rgba(255, 111, 97, 0.14)" } : {}}>
+                style={isActive ? { color: "#8B5CF6", background: "#F5F3FF", boxShadow: "inset 0 0 0 1px rgba(139, 92, 246, 0.14)" } : {}}>
                 <span style={{ transform: isActive ? "scale(1.1)" : "scale(1)", transition: "transform 0.15s" }}>{item.icon}</span>
-                <span className="text-[10px] font-medium" style={isActive ? { color: "#FF6F61" } : {}}>{item.label}</span>
-                {isActive && <span className="w-1 h-1 rounded-full mt-0.5" style={{ background: "#FF6F61" }} />}
+                <span className="text-[10px] font-medium" style={isActive ? { color: "#8B5CF6" } : {}}>{item.label}</span>
+                {isActive && <span className="w-1 h-1 rounded-full mt-0.5" style={{ background: "#8B5CF6" }} />}
               </button>
             )
           })}

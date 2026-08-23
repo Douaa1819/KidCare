@@ -1,4 +1,4 @@
-/** Petitspas semantic status styles — use with Badge variant or pp-badge-* classes */
+/** KidCare semantic status styles — use with Badge variant or pp-badge-* classes */
 
 import type { VariantProps } from "class-variance-authority"
 import type { badgeVariants } from "@/components/ui/badge"

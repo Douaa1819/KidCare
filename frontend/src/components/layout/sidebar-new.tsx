@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -254,19 +253,15 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
           <Link
             href={withLocalePath(currentLocale, "/admin")}
             className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}
-            title="PetitsPas"
+            title="KidCare"
           >
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-transparent shrink-0">
-              <Image
-                src="/Group 13.svg"
-                alt={ta("logoAlt")}
-                width={40}
-                height={40}
-              />
-            </div>
-            {!collapsed && (
+            {collapsed ? (
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-700">
+                K
+              </span>
+            ) : (
               <div className="min-w-0">
-                <h1 className="font-bold text-lg text-sidebar-foreground">PetitsPas</h1>
+                <h1 className="font-bold text-lg text-sidebar-foreground">KidCare</h1>
                 {isSuperAdmin ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600">
                     <Crown className="h-3.5 w-3.5" aria-hidden /> {tr("superAdmin")}
@@ -358,16 +353,8 @@ export function SidebarNew({ currentLocale }: { currentLocale: Locale }) {
             className="flex items-center gap-3"
             onClick={() => setMobileOpen(false)}
           >
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-transparent">
-              <Image
-                src="/Group 13.svg"
-                alt={ta("logoAlt")}
-                width={40}
-                height={40}
-              />
-            </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-lg text-sidebar-foreground">PetitsPas</h1>
+              <h1 className="font-bold text-lg text-sidebar-foreground">KidCare</h1>
               {isSuperAdmin ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600">
                   <Crown className="h-3.5 w-3.5" aria-hidden /> {tr("superAdmin")}

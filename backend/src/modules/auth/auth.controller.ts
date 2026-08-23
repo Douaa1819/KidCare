@@ -53,7 +53,7 @@ export class AuthController {
     private authService: AuthService,
     private auditService: AuditService,
   ) {
-    this.adminEmail = this.configService.get('ADMIN_EMAIL', 'admin@wlw.ma');
+    this.adminEmail = this.configService.get('ADMIN_EMAIL', 'admin@demo.kidcare.app');
     this.adminPassword = this.configService.get('ADMIN_PASSWORD', 'change_me');
     this.jwtSecret = this.configService.get('JWT_SECRET', 'dev_secret');
   }

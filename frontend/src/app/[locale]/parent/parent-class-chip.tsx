@@ -59,8 +59,8 @@ export function resolveClassVisual(
   return {
     label,
     Icon: School,
-    chipClass: "bg-[#FFF7ED] text-gray-800 ring-[#FF6F61]/20",
-    iconClass: "text-[#FF6F61]",
+    chipClass: "bg-[#FFF7ED] text-gray-800 ring-[#8B5CF6]/20",
+    iconClass: "text-[#8B5CF6]",
   }
 }
 

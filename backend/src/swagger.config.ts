@@ -3,8 +3,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
-    .setTitle('Crèche SaaS API')
-    .setDescription('API documentation for Crèche SaaS application')
+    .setTitle('KidCare API')
+    .setDescription('API documentation for the KidCare daycare management platform')
     .setVersion('1.0')
     .addTag('creche')
     .addBearerAuth()

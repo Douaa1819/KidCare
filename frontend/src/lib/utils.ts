@@ -144,7 +144,7 @@ export function getInitials(firstName: string, lastName?: string): string {
  */
 export function randomColor(): string {
   const colors = [
-    '#FF6F61',
+    '#8B5CF6',
     '#6B5B95',
     '#88B0D3',
     '#60A3A6',

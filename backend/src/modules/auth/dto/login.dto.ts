@@ -9,7 +9,7 @@ import { TrimString } from '../../../common/validators/common-fields';
  */
 export class LoginDto {
   @ApiProperty({
-    example: 'admin@wlw.ma',
+    example: 'admin@demo.kidcare.app',
     description: 'Email de l\'administrateur',
   })
   @TrimString()
@@ -59,7 +59,7 @@ export class LoginResponseDto {
   role: string;
 
   @ApiProperty({
-    example: 'admin@wlw.ma',
+    example: 'admin@demo.kidcare.app',
     description: 'Email utilisateur',
   })
   email: string;

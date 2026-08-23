@@ -19,7 +19,9 @@ const buttonVariants = cva(
         primary:
           "bg-primary text-primary-foreground hover:bg-[var(--primary-hover)] active:bg-[var(--primary-active)] focus-visible:ring-[var(--btn-primary-ring)]",
         brand:
-          "bg-accent text-accent-foreground hover:bg-[var(--accent-hover)] active:bg-[var(--accent-active)] focus-visible:ring-[var(--accent-ring)]",
+          "bg-accent text-accent-foreground hover:bg-[var(--accent-hover)] active:bg-[var(--accent-active)] focus-visible:ring-[var(--accent-ring)] rounded-xl shadow-sm",
+        "brand-outline":
+          "border border-accent bg-transparent text-accent hover:bg-[color-mix(in_srgb,var(--accent)_8%,white)] active:bg-[color-mix(in_srgb,var(--accent)_14%,white)] focus-visible:ring-[var(--accent-ring)] rounded-xl",
         auth:
           "bg-[var(--auth-accent)] text-white hover:bg-[var(--auth-accent-hover)] active:brightness-95 focus-visible:ring-[var(--auth-accent-ring)] shadow-sm",
         success:
@@ -38,10 +40,12 @@ const buttonVariants = cva(
           "border border-[var(--info-border)] bg-background text-[var(--info-text)] hover:bg-[var(--info-soft)] hover:border-[var(--info-border)] focus-visible:ring-[var(--info-ring)]",
         outline:
           "border border-border bg-background text-foreground hover:bg-[var(--btn-outline-hover-bg)] hover:border-[var(--btn-outline-hover-border)] focus-visible:ring-[var(--btn-outline-ring)]",
+        "purple-outline":
+          "border border-accent bg-background text-accent hover:bg-[color-mix(in_srgb,var(--accent)_8%,white)] hover:border-accent focus-visible:ring-[var(--accent-ring)] rounded-xl",
         ghost:
           "text-foreground hover:bg-[var(--btn-ghost-hover-bg)] focus-visible:ring-[var(--btn-ghost-ring)]",
         link:
-          "text-[var(--info-text)] font-medium underline-offset-4 hover:text-[var(--status-progress-text)] hover:underline focus-visible:ring-[var(--info-ring)]",
+          "text-accent font-medium underline-offset-4 hover:text-[var(--accent-hover)] hover:underline focus-visible:ring-[var(--accent-ring)]",
       },
       size: {
         default: "h-10 px-4 py-2",

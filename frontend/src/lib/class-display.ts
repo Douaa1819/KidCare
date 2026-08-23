@@ -15,8 +15,8 @@ const LEVEL_STYLES: Record<ClassLevelKey, Omit<ClassLevelStyle, "label">> = {
   TPS: {
     key: "TPS",
     icon: Baby,
-    chipClass: "bg-[#FFF7ED] text-[#b85c52] ring-[#FF6F61]/20",
-    iconClass: "text-[#FF6F61]",
+    chipClass: "bg-[#FFEDD5] text-[#b85c52] ring-[#8B5CF6]/20",
+    iconClass: "text-[#8B5CF6]",
   },
   PS: {
     key: "PS",

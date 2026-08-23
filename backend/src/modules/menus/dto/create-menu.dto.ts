@@ -132,7 +132,7 @@ export class MenuResponseDto {
   })
   allergenes: string[];
 
-  @ApiPropertyOptional({ example: 'admin@wlw.ma' })
+  @ApiPropertyOptional({ example: 'admin@demo.kidcare.app' })
   creePar?: string;
 
   @ApiProperty({ example: '2025-11-06T10:00:00Z' })

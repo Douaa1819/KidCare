@@ -1,10 +1,10 @@
 {
-  "name": "Petitspas - IA Résumé de la journée",
+  "name": "KidCare - IA Résumé de la journée",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "petitspas/ai-resume-journee",
+        "path": "kidcare/ai-resume-journee",
         "responseMode": "responseNode",
         "options": {}
       },

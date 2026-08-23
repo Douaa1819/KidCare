@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyAuthCookies } from "@/lib/auth/cookies.server";
-import { resolveNestApiBaseUrl } from "@/lib/auth/constants";
+import { fetchNestApi } from "@/lib/auth/fetch-nest-api.server";
 
 /** Connexion super-admin (.env). */
 export async function POST(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Email et mot de passe requis" }, { status: 400 });
   }
 
-  const upstream = await fetch(`${resolveNestApiBaseUrl()}/auth/login`, {
+  const upstream = await fetchNestApi("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

@@ -26,7 +26,7 @@ export function AuthHeroBackdrop() {
           transform={`translate(${star.x} ${star.y}) scale(${star.scale})`}
           opacity={star.opacity}
         >
-          <path d={STAR} fill="#aedff7" />
+          <path d={STAR} fill="#c4b5fd" />
         </g>
       ))}
     </svg>

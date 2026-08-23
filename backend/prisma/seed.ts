@@ -1,5 +1,5 @@
 /**
- * Seed minimal Petitspas — démo production (4 comptes, 1 famille, 2 enfants).
+ * Seed minimal KidCare — démo production (4 comptes, 1 famille, 2 enfants).
  *
  * ⚠️ Ne recrée PAS les 15 familles test.
  * Pour nettoyer une base existante : pnpm run cleanup:demo
@@ -19,10 +19,10 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const DEMO_PASSWORDS = {
-  'admin@wlw.ma': process.env.ADMIN_PASSWORD ?? 'change_me',
-  'sophie@wlw.ma': 'Sophie123!',
+  'admin@demo.kidcare.app': process.env.ADMIN_PASSWORD ?? 'change_me',
+  'sophie@demo.kidcare.app': 'Sophie123!',
   'enseignant.sophie@test.com': 'Teacher123!',
-  'sophie.parent@wlw.ma': 'SophieParent123!',
+  'sophie.parent@demo.kidcare.app': 'SophieParent123!',
 } as const;
 
 async function hashPassword(plain: string) {
@@ -99,19 +99,19 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('🌱 Seed minimal Petitspas (sans familles test)...');
+  console.log('🌱 Seed minimal KidCare (sans familles test)...');
 
   const classeTPS = await ensureClasses();
 
   // Super Admin
-  await upsertDemoUser('admin@wlw.ma', {
+  await upsertDemoUser('admin@demo.kidcare.app', {
     prenom: 'Admin',
     nom: 'System',
     role: RoleUtilisateur.SUPER_ADMIN,
   });
 
   // Admin Sophie
-  await upsertDemoUser('sophie@wlw.ma', {
+  await upsertDemoUser('sophie@demo.kidcare.app', {
     prenom: 'Sophie',
     nom: 'Admin',
     role: RoleUtilisateur.ADMIN,
@@ -148,16 +148,16 @@ async function main() {
 
   // Parent Sophie + famille
   const famille = await prisma.famille.upsert({
-    where: { emailPrincipal: 'sophie.parent@wlw.ma' },
+    where: { emailPrincipal: 'sophie.parent@demo.kidcare.app' },
     update: { languePreferee: 'fr' },
     create: {
-      emailPrincipal: 'sophie.parent@wlw.ma',
+      emailPrincipal: 'sophie.parent@demo.kidcare.app',
       languePreferee: 'fr',
     },
   });
 
   const tuteur = await prisma.tuteur.upsert({
-    where: { email: 'sophie.parent@wlw.ma' },
+    where: { email: 'sophie.parent@demo.kidcare.app' },
     update: {
       prenom: 'Sophie',
       nom: 'Parent',
@@ -166,7 +166,7 @@ async function main() {
       familleId: famille.id,
     },
     create: {
-      email: 'sophie.parent@wlw.ma',
+      email: 'sophie.parent@demo.kidcare.app',
       prenom: 'Sophie',
       nom: 'Parent',
       telephone: '+212600000000',
@@ -176,7 +176,7 @@ async function main() {
     },
   });
 
-  await upsertDemoUser('sophie.parent@wlw.ma', {
+  await upsertDemoUser('sophie.parent@demo.kidcare.app', {
     prenom: 'Sophie',
     nom: 'Parent',
     role: RoleUtilisateur.PARENT,
@@ -218,7 +218,7 @@ async function main() {
   }
 
   console.log('\n✅ Seed minimal terminé');
-  console.log('   Comptes : admin@wlw.ma, sophie@wlw.ma, enseignant.sophie@test.com, sophie.parent@wlw.ma');
+  console.log('   Comptes : admin@demo.kidcare.app, sophie@demo.kidcare.app, enseignant.sophie@test.com, sophie.parent@demo.kidcare.app');
   console.log('   Enfants : Hafsa Chemnanne, Lucas Martin (TPS)');
   console.log('\n   Pour nettoyer une base avec données test : pnpm run cleanup:demo');
   console.log('\n🔑 Mots de passe :');

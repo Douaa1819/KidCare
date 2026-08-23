@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "creche-wlw-api-v2",
-    "name": "Crèche WLW API v2",
-    "description": "Collection Postman pour tester l'API Crèche WLW - Auth, Presences & Menus",
+    "_postman_id": "kidcare-api-v2",
+    "name": "KidCare API v2",
+    "description": "Collection Postman pour tester l'API KidCare - Auth, Presences & Menus",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -21,7 +21,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@wlw.ma\",\n  \"password\": \"change_me\"\n}"
+              "raw": "{\n  \"email\": \"admin@demo.kidcare.app\",\n  \"password\": \"change_me\"\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/auth/login",

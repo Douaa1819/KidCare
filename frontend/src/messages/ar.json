@@ -20,7 +20,7 @@
     "a11y": {
       "changeLanguage": "تغيير اللغة",
       "language": "اللغة",
-      "logoAlt": "شعار PetitsPas"
+      "logoAlt": "شعار KidCare"
     }
   },
   "roles": {
@@ -98,7 +98,7 @@
     },
     "dashboard": {
       "title": "لوحة تحكم ولي الأمر",
-      "subtitle": "مرحباً بك في PetitsPas"
+      "subtitle": "مرحباً بك في KidCare"
     },
     "tabs": {
       "overview": "نظرة عامة",
@@ -364,14 +364,14 @@
     }
   },
   "notFound": {
-    "title": "خطأ 404 — PetitsPas",
+    "title": "خطأ 404 — KidCare",
     "headline": "عذراً! هذه الصفحة ضلّت الطريق",
     "description": "الصفحة التي تبحث عنها غير موجودة، أو نُقلت، أو لم تعد متاحة.",
     "backHome": "العودة إلى الرئيسية",
     "hint": "لا تقلق — سنعيدك إلى المسار الصحيح."
   },
   "home": {
-    "title": "PetitsPas",
+    "title": "KidCare",
     "subtitle": "منصة متكاملة لإدارة الحضانات ورياض الأطفال",
     "adminSection": "للإدارة",
     "adminDescription": "إدارة الأطفال، التسجيلات، الحضور والفواتير",
@@ -381,10 +381,10 @@
     "inscription": "تسجيل",
     "invalidLogin": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
     "forgotPasswordLink": "نسيت كلمة المرور؟",
-    "forgotPasswordLinkClass": "text-xs font-semibold text-[#FF6F61] hover:text-[#e45f54] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
+    "forgotPasswordLinkClass": "text-xs font-semibold text-[#8B5CF6] hover:text-[#6D28D9] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 rounded-sm",
     "emailLabel": "البريد الإلكتروني",
     "passwordLabel": "كلمة المرور",
-    "emailPlaceholder": "exemple@thepetitspas.com",
+    "emailPlaceholder": "exemple@kidcare.app",
     "passwordPlaceholder": "••••••••",
     "submit": "تسجيل الدخول",
     "submitting": "جاري الاتصال…",
@@ -742,7 +742,7 @@
       "next": "التالي",
       "pageOf": "صفحة {page} / {totalPages}",
       "printTitle": "الحضور",
-      "printHeading": "PetitsPas — الحضور",
+      "printHeading": "KidCare — الحضور",
       "printPeriod": "الفترة: {from} ← {to}",
       "apiStatus": {
         "Present": "حاضر",
@@ -855,11 +855,11 @@
       "capacityChildren": "{count} طفل",
       "emptyState": "لا توجد معلومات بعد.",
       "fillInfo": "إدخال المعلومات",
-      "placeholderName": "حضانة PetitsPas",
+      "placeholderName": "حضانة KidCare",
       "placeholderAddress": "12 شارع الأطفال، الدار البيضاء",
       "placeholderPhone": "+212 522 000 000",
-      "placeholderEmail": "contact@petitspas.ma",
-      "placeholderWebsite": "https://petitspas.ma",
+      "placeholderEmail": "contact@kidcare.app",
+      "placeholderWebsite": "https://kidcare.app",
       "placeholderHours": "الإثنين–الجمعة: 07:30 – 18:00",
       "placeholderDescription": "وصف قصير للحضانة…",
       "hoursHint": "اختر يوما وأضف فترة أو أكثر (مثال: 09:00–12:00 و 14:00–18:00).",

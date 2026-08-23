@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { usePathname, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -36,16 +35,13 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100">
       <header className="border-b bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 px-3 md:px-6 py-4 pt-[calc(env(safe-area-inset-top)+1rem)] md:pt-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-200">
-              <Image src="/Group 13.svg" alt="Logo PetitsPas" width={40} height={40} />
-            </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-gray-900 truncate">{t("teacher.dashboard.title")}</h1>
-              <p className="text-sm text-gray-500">Crèche PetitsPas</p>
+              <p className="text-sm font-semibold bg-gradient-to-r from-violet-700 to-purple-600 bg-clip-text text-transparent">KidCare</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full sm:w-auto sm:justify-end">

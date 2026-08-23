@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Crèche WLW API - Complete",
+    "name": "KidCare API - Complete",
     "description": "API complète pour la gestion de crèche avec Presences, Menus, Daily Resumes, et Class Daily Summaries",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -20,7 +20,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@wlw.ma\",\n  \"password\": \"change_me\"\n}"
+              "raw": "{\n  \"email\": \"admin@demo.kidcare.app\",\n  \"password\": \"change_me\"\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/auth/login",
@@ -43,7 +43,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"enseignant@wlw.ma\",\n  \"password\": \"TempPassword123!\"\n}"
+              "raw": "{\n  \"email\": \"enseignant@KidCare.ma\",\n  \"password\": \"TempPassword123!\"\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/auth/login-user",

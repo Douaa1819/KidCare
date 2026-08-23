@@ -12,8 +12,8 @@ import {
   useParentSelectedChild,
 } from "./parent-selected-child-context"
 
-export const PARENT_STORAGE_ENFANT_ID = "petitspas-parent-selected-enfant-id"
-export const PARENT_CHILD_SELECT_EVENT = "petitspas-parent-child-select"
+export const PARENT_STORAGE_ENFANT_ID = "kidcare-parent-selected-enfant-id"
+export const PARENT_CHILD_SELECT_EVENT = "kidcare-parent-child-select"
 
 export type ParentChildSelectDetail = { id: string }
 
@@ -272,7 +272,7 @@ export function ParentChildSelector() {
             >
               {selected ? <ChildSelectorContent enfant={selected} name={selectedName} /> : null}
               <ChevronDown
-                className={cn("h-4 w-4 shrink-0 text-[#FF6F61]", open && "rotate-180")}
+                className={cn("h-4 w-4 shrink-0 text-[#8B5CF6]", open && "rotate-180")}
                 style={{ transition: "transform 0.15s ease" }}
                 aria-hidden
               />
@@ -304,7 +304,7 @@ export function ParentChildSelector() {
                       >
                         <ChildSelectorContent enfant={e} name={name} />
                         {isSelected ? (
-                          <Check className="h-3.5 w-3.5 shrink-0 text-[#FF6F61]" aria-hidden />
+                          <Check className="h-3.5 w-3.5 shrink-0 text-[#8B5CF6]" aria-hidden />
                         ) : (
                           <span className="w-3.5 shrink-0" aria-hidden />
                         )}

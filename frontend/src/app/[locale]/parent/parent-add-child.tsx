@@ -139,7 +139,7 @@ export function ParentAddChild({ onChildAdded }: ParentAddChildProps) {
             </div>
             <Button
               type="button"
-              className="parent-primary-button w-full bg-[#FF6F61] text-white sm:w-auto"
+              className="parent-primary-button w-full text-white sm:w-auto"
               onClick={() => setModalOpen(true)}
             >
               {t("addChildCta")}
@@ -287,7 +287,7 @@ export function ParentAddChild({ onChildAdded }: ParentAddChildProps) {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-[#FF6F61] text-white hover:bg-[#e85f52]"
+                  variant="brand"
                   disabled={
                     saving ||
                     classesLoading ||

@@ -155,7 +155,7 @@ export default function Home({ params }: { params: Promise<{ locale: Locale }> }
   }
 
   return (
-    <AuthShell locale={currentLocale} title={t("title")} subtitle={t("subtitle")} animateLogo>
+    <AuthShell locale={currentLocale} title={t("title")} subtitle={t("subtitle")}>
       <form className="space-y-5" onSubmit={handleSubmit} noValidate>
         {formError ? (
           <InlineAlert variant="error" onDismiss={() => setFormError(null)}>
@@ -246,7 +246,7 @@ export default function Home({ params }: { params: Promise<{ locale: Locale }> }
 
         <Button
           type="submit"
-          variant="auth"
+          variant="brand"
           className="w-full rounded-xl py-2.5 font-semibold"
           disabled={isSubmitting}
         >

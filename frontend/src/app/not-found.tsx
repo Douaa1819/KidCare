@@ -1,11 +1,11 @@
-import { PetitspasNotFound } from "@/components/petitspas-not-found"
+import { KidCareNotFound } from "@/components/kidcare-not-found"
 import frMessages from "@/messages/fr.json"
 
 export default function RootNotFoundPage() {
   const copy = frMessages.notFound
 
   return (
-    <PetitspasNotFound
+    <KidCareNotFound
       locale="fr"
       copy={{
         title: copy.title,

@@ -11,7 +11,7 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
-export const SIDEBAR_COLLAPSED_STORAGE_KEY = "petitspas.sidebar.collapsed";
+export const SIDEBAR_COLLAPSED_STORAGE_KEY = "kidcare.sidebar.collapsed";
 
 type SidebarContextValue = {
   collapsed: boolean;

@@ -2,14 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import {
-  wrapPetitspasEmail,
+  wrapKidCareEmail,
   emailCredentialsBox,
   emailInfoBox,
   emailNoticeBox,
   emailParagraph,
   emailHeading,
   escapeHtml,
-} from '../email/petitspas-email-layout';
+} from '../email/kidcare-email-layout';
 import {
   bilingualEmailSubject,
   wrapBilingualEmail,
@@ -44,7 +44,7 @@ export class EmailService {
   }
 
   private getFromAddress(): string {
-    return this.configService.get<string>('SMTP_FROM') || 'noreply@petitspas.com';
+    return this.configService.get<string>('SMTP_FROM') || 'noreply@kidcare.app';
   }
 
   private initializeTransporter(): void {
@@ -103,8 +103,8 @@ export class EmailService {
     locale?: 'fr' | 'ar';
   }): Promise<EmailSendResult> {
     const subject = bilingualEmailSubject(
-      'Confirmation de votre inscription — PetitsPas',
-      'تأكيد طلب التسجيل — PetitsPas',
+      'Confirmation de votre inscription — KidCare',
+      'تأكيد طلب التسجيل — KidCare',
     );
     const html = this.buildInscriptionConfirmationHtml(params);
     return this.deliver({
@@ -123,8 +123,8 @@ export class EmailService {
     locale?: 'fr' | 'ar';
   }): Promise<EmailSendResult> {
     const subject = bilingualEmailSubject(
-      'Vos identifiants de connexion — PetitsPas',
-      'بيانات الدخول — PetitsPas',
+      'Vos identifiants de connexion — KidCare',
+      'بيانات الدخول — KidCare',
     );
     const loginUrl = this.getParentLoginUrl();
     const html = this.buildParentCredentialsHtml({
@@ -210,7 +210,7 @@ export class EmailService {
       ${emailNoticeBox('Statut : candidature en cours de traitement')}
       ${emailInfoBox(infoFr)}
       ${emailParagraph(
-        "L'équipe PetitsPas va l'examiner et vous recevrez une réponse prochainement.",
+        "L'équipe KidCare va l'examiner et vous recevrez une réponse prochainement.",
       )}
       ${emailParagraph('Merci de votre confiance.')}
     `;
@@ -249,7 +249,7 @@ export class EmailService {
 
     const innerFr = `
       ${emailParagraph(`Bonjour <strong>${escapeHtml(params.parentName)}</strong>,`)}
-      ${emailParagraph('Votre compte parent PetitsPas a été créé.')}
+      ${emailParagraph('Votre compte parent KidCare a été créé.')}
       ${emailParagraph('Voici vos identifiants de connexion :')}
       ${emailCredentialsBox([
         { label: 'Email', value: params.email },
@@ -265,7 +265,7 @@ export class EmailService {
 
     const innerAr = `
       ${emailParagraph(`مرحباً <strong>${escapeHtml(params.parentName)}</strong>،`)}
-      ${emailParagraph('تم إنشاء حسابكم الأبوي على PetitsPas.')}
+      ${emailParagraph('تم إنشاء حسابكم الأبوي على KidCare.')}
       ${emailParagraph('إليكم بيانات الدخول :')}
       ${emailCredentialsBox([
         { label: 'البريد الإلكتروني', value: params.email },
@@ -295,8 +295,8 @@ export class EmailService {
     locale?: string;
   }): Promise<boolean> {
     const subject = bilingualEmailSubject(
-      'Réinitialisation de votre mot de passe — PetitsPas',
-      'إعادة تعيين كلمة المرور — PetitsPas',
+      'Réinitialisation de votre mot de passe — KidCare',
+      'إعادة تعيين كلمة المرور — KidCare',
     );
     const loginUrlFr = `${this.getFrontendBaseUrl()}/fr`;
     const loginUrlAr = `${this.getFrontendBaseUrl()}/ar`;
@@ -364,8 +364,8 @@ export class EmailService {
     locale?: string;
   }): Promise<boolean> {
     const subject = bilingualEmailSubject(
-      'Réinitialisation de votre mot de passe — PetitsPas',
-      'إعادة تعيين كلمة المرور — PetitsPas',
+      'Réinitialisation de votre mot de passe — KidCare',
+      'إعادة تعيين كلمة المرور — KidCare',
     );
     const html = this.generatePasswordResetHtml(params.prenom, params.resetUrl);
     const result = await this.deliver({
@@ -413,8 +413,8 @@ export class EmailService {
     locale?: 'fr' | 'ar';
   }): Promise<boolean> {
     const subject = bilingualEmailSubject(
-      'Décision concernant votre inscription — PetitsPas',
-      'قرار بشأن طلب التسجيل — PetitsPas',
+      'Décision concernant votre inscription — KidCare',
+      'قرار بشأن طلب التسجيل — KidCare',
     );
     const enfantLabel = params.enfantNom
       ? `${params.enfantPrenom} ${params.enfantNom}`.trim()
@@ -430,7 +430,7 @@ export class EmailService {
     const innerFr = `
       ${emailParagraph(`Bonjour <strong>${escapeHtml(params.parentPrenom)} ${escapeHtml(params.parentNom)}</strong>,`)}
       ${emailParagraph(
-        `Nous vous remercions pour l'intérêt porté à PetitsPas et pour votre demande d'inscription concernant <strong>${escapeHtml(enfantLabel)}</strong>.`,
+        `Nous vous remercions pour l'intérêt porté à KidCare et pour votre demande d'inscription concernant <strong>${escapeHtml(enfantLabel)}</strong>.`,
       )}
       ${emailParagraph(
         'Après examen attentif de votre dossier, nous ne sommes pas en mesure de retenir votre candidature pour le moment.',
@@ -442,7 +442,7 @@ export class EmailService {
     const innerAr = `
       ${emailParagraph(`مرحباً <strong>${escapeHtml(params.parentPrenom)} ${escapeHtml(params.parentNom)}</strong>،`)}
       ${emailParagraph(
-        `نشكركم على اهتمامكم بـ PetitsPas وعلى طلب التسجيل الخاص بـ <strong>${escapeHtml(enfantLabel)}</strong>.`,
+        `نشكركم على اهتمامكم بـ KidCare وعلى طلب التسجيل الخاص بـ <strong>${escapeHtml(enfantLabel)}</strong>.`,
       )}
       ${emailParagraph(
         'بعد دراسة ملفكم، نأسف لإبلاغكم بأننا غير قادرين على قبول الطلب حالياً.',
@@ -476,8 +476,8 @@ export class EmailService {
     parentEmail: string;
   }): Promise<boolean> {
     const subject = bilingualEmailSubject(
-      'Nouvelle inscription reçue — PetitsPas',
-      'تسجيل جديد — PetitsPas',
+      'Nouvelle inscription reçue — KidCare',
+      'تسجيل جديد — KidCare',
     );
 
     const enfantLabel = `${params.enfantPrenom} ${params.enfantNom}`.trim();

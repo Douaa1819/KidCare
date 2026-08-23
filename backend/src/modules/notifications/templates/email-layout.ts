@@ -1,10 +1,10 @@
 export {
   escapeHtml,
   wrapEmailLayout,
-  wrapPetitspasEmail,
+  wrapKidCareEmail,
   emailHeading,
   emailParagraph,
   emailTag,
   emailInfoBox,
   emailNoticeBox,
-} from '../../../common/email/petitspas-email-layout';
+} from '../../../common/email/kidcare-email-layout';

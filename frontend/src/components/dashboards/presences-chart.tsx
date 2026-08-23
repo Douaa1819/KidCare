@@ -25,7 +25,7 @@ export function PresencesChart() {
           <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e5e5" }} />
           <Legend />
           <Bar dataKey="present" fill="#B8E986" name="Présent" />
-          <Bar dataKey="absent" fill="#FF6F61" name="Absent" />
+          <Bar dataKey="absent" fill="#8B5CF6" name="Absent" />
         </BarChart>
       </ResponsiveContainer>
     </Card>

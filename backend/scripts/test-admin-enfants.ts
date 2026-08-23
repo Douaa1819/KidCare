@@ -4,7 +4,7 @@ async function main() {
   const login = await fetch(`${BASE}/auth/login-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'sophie@wlw.ma', password: 'Sophie123!' }),
+    body: JSON.stringify({ email: 'sophie@demo.kidcare.app', password: 'Sophie123!' }),
   });
   const { accessToken } = (await login.json()) as { accessToken?: string };
   if (!accessToken) {

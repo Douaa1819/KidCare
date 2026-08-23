@@ -8,7 +8,7 @@ import { RoleUtilisateur, StatutUtilisateur } from '@prisma/client';
  */
 export class CreateUserDto {
   @ApiProperty({
-    example: 'prof@wlw.ma',
+    example: 'teacher@demo.kidcare.app',
     description: 'Email de l\'utilisateur',
   })
   @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
@@ -56,7 +56,7 @@ export class CreateUserDto {
  */
 export class InviteTeacherDto {
   @ApiProperty({
-    example: 'prof@wlw.ma',
+    example: 'teacher@demo.kidcare.app',
     description: 'Email de l\'enseignant',
   })
   @Transform(({ value }) => String(value ?? '').trim().toLowerCase())
@@ -207,7 +207,7 @@ export class UpdateTeacherProfileDto {
  * DTO pour mettre à jour les informations de l'établissement
  */
 export class UpdateEtablissementDto {
-  @ApiProperty({ example: 'Crèche PetitsPas', required: false })
+  @ApiProperty({ example: 'KidCare Daycare', required: false })
   @IsOptional()
   @IsString()
   nom?: string;
@@ -222,12 +222,12 @@ export class UpdateEtablissementDto {
   @IsString()
   telephone?: string;
 
-  @ApiProperty({ example: 'contact@petitspas.ma', required: false })
+  @ApiProperty({ example: 'contact@kidcare.app', required: false })
   @IsOptional()
   @IsEmail()
   email?: string;
 
-  @ApiProperty({ example: 'https://petitspas.ma', required: false })
+  @ApiProperty({ example: 'https://kidcare.app', required: false })
   @IsOptional()
   @IsString()
   siteWeb?: string;

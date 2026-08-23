@@ -1,10 +1,10 @@
-/** Couleurs alignées sur le thème frontend PetitsPas */
-export const PETITSPAS_THEME = {
-  sky: '#AEDFF7',
-  skyLight: '#E8F6FC',
-  coral: '#FF6F61',
-  coralHover: '#e45f54',
-  cream: '#FFF7ED',
+/** Couleurs alignées sur le thème frontend KidCare */
+export const KIDCARE_THEME = {
+  sky: '#C4B5FD',
+  skyLight: '#EDE9FE',
+  coral: '#8B5CF6',
+  coralHover: '#6D28D9',
+  cream: '#F5F3FF',
   text: '#1a1a1a',
   textSoft: '#4b5563',
   textMuted: '#6b7280',
@@ -23,7 +23,7 @@ export function escapeHtml(s: string): string {
 
 export type EmailCta = { href: string; label: string };
 
-export type PetitspasEmailOptions = {
+export type KidCareEmailOptions = {
   /** Titre de la page / bandeau */
   title: string;
   /** Sous-titre sous le logo (optionnel) */
@@ -36,20 +36,20 @@ export type PetitspasEmailOptions = {
 };
 
 const FOOTER_FR =
-  'Cet email a été envoyé automatiquement par PetitsPas. Merci de ne pas répondre directement à ce message.';
-const FOOTER_AR = 'تم إرسال هذا البريد تلقائياً من PetitsPas. يُرجى عدم الرد مباشرة على هذه الرسالة.';
+  'Cet email a été envoyé automatiquement par KidCare. Merci de ne pas répondre directement à ce message.';
+const FOOTER_AR = 'تم إرسال هذا البريد تلقائياً من KidCare. يُرجى عدم الرد مباشرة على هذه الرسالة.';
 
 /**
- * Enveloppe HTML simple, compatible clients mail, thème PetitsPas.
+ * Enveloppe HTML simple, compatible clients mail, thème KidCare.
  */
-export function wrapPetitspasEmail(options: PetitspasEmailOptions): string {
+export function wrapKidCareEmail(options: KidCareEmailOptions): string {
   const { title, subtitle, innerHtml, cta } = options;
   const isAr = options.locale === 'ar';
   const dir = isAr ? 'rtl' : 'ltr';
   const lang = isAr ? 'ar' : 'fr';
   const footer = options.footerNote ?? (isAr ? FOOTER_AR : FOOTER_FR);
   const year = new Date().getFullYear();
-  const t = PETITSPAS_THEME;
+  const t = KIDCARE_THEME;
 
   const ctaBlock = cta
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto 8px;">
@@ -83,7 +83,7 @@ export function wrapPetitspasEmail(options: PetitspasEmailOptions): string {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:${t.white};border-radius:16px;overflow:hidden;border:1px solid ${t.border};box-shadow:0 4px 24px rgba(174,223,247,0.35);">
           <tr>
             <td style="padding:28px 32px 24px;text-align:center;background:linear-gradient(135deg, ${t.sky} 0%, ${t.cream} 55%, ${t.white} 100%);border-bottom:1px solid ${t.border};">
-              <p style="margin:0;font-size:26px;font-weight:700;color:${t.text};letter-spacing:-0.02em;">PetitsPas</p>
+              <p style="margin:0;font-size:26px;font-weight:700;color:${t.text};letter-spacing:-0.02em;">KidCare</p>
               ${subtitleBlock}
             </td>
           </tr>
@@ -96,7 +96,7 @@ export function wrapPetitspasEmail(options: PetitspasEmailOptions): string {
           <tr>
             <td style="padding:16px 32px 24px;border-top:1px solid ${t.border};text-align:center;">
               <p style="margin:0 0 6px;font-size:12px;color:${t.textMuted};line-height:1.5;">${footer}</p>
-              <p style="margin:0;font-size:11px;color:#9ca3af;">© ${year} PetitsPas</p>
+              <p style="margin:0;font-size:11px;color:#9ca3af;">© ${year} KidCare</p>
             </td>
           </tr>
         </table>
@@ -109,14 +109,14 @@ export function wrapPetitspasEmail(options: PetitspasEmailOptions): string {
 
 /** Alias pour les templates de notification existants */
 export function wrapEmailLayout(title: string, innerHtml: string, locale?: 'fr' | 'ar'): string {
-  return wrapPetitspasEmail({ title, innerHtml, locale });
+  return wrapKidCareEmail({ title, innerHtml, locale });
 }
 
 /** Bloc identifiants (invitation) */
 export function emailCredentialsBox(
   rows: { label: string; value: string }[],
 ): string {
-  const t = PETITSPAS_THEME;
+  const t = KIDCARE_THEME;
   const rowsHtml = rows
     .map(
       (r) => `<tr>
@@ -135,7 +135,7 @@ export function emailCredentialsBox(
 
 /** Encadré d’information */
 export function emailInfoBox(contentHtml: string): string {
-  const t = PETITSPAS_THEME;
+  const t = KIDCARE_THEME;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;background-color:${t.cream};border-radius:12px;border:1px solid ${t.border};">
   <tr><td style="padding:14px 16px;font-size:14px;line-height:1.55;color:${t.text};">${contentHtml}</td></tr>
 </table>`;
@@ -143,22 +143,22 @@ export function emailInfoBox(contentHtml: string): string {
 
 /** Note / conseil */
 export function emailNoticeBox(text: string): string {
-  const t = PETITSPAS_THEME;
+  const t = KIDCARE_THEME;
   return `<p style="margin:16px 0 0;padding:12px 14px;font-size:13px;line-height:1.5;color:${t.textSoft};background-color:${t.cream};border-radius:10px;border:1px solid #fde68a;">${escapeHtml(text)}</p>`;
 }
 
 /** Titre de section dans le corps */
 export function emailHeading(text: string): string {
-  return `<h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:${PETITSPAS_THEME.text};line-height:1.3;">${escapeHtml(text)}</h2>`;
+  return `<h2 style="margin:0 0 16px;font-size:18px;font-weight:700;color:${KIDCARE_THEME.text};line-height:1.3;">${escapeHtml(text)}</h2>`;
 }
 
 /** Badge / statut */
 export function emailTag(label: string): string {
-  const t = PETITSPAS_THEME;
+  const t = KIDCARE_THEME;
   return `<span style="display:inline-block;margin:8px 0;padding:5px 12px;font-size:13px;font-weight:600;color:#1e4a5f;background-color:${t.sky};border-radius:999px;">${escapeHtml(label)}</span>`;
 }
 
 /** Paragraphe standard */
 export function emailParagraph(html: string): string {
-  return `<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:${PETITSPAS_THEME.text};">${html}</p>`;
+  return `<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:${KIDCARE_THEME.text};">${html}</p>`;
 }

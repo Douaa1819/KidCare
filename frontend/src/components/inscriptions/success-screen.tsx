@@ -18,10 +18,10 @@ export default function SuccessScreen() {
       <div className="auth-card relative w-full overflow-hidden text-center space-y-5">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           {[
-            { left: "12%", delay: "0s", color: "bg-[#aedff7]" },
+            { left: "12%", delay: "0s", color: "bg-[#C4B5FD]" },
             { left: "28%", delay: "0.15s", color: "bg-[#b8e986]" },
             { left: "44%", delay: "0.3s", color: "bg-[#eef8fc]" },
-            { left: "60%", delay: "0.1s", color: "bg-[#aedff7]/70" },
+            { left: "60%", delay: "0.1s", color: "bg-[#C4B5FD]/70" },
             { left: "76%", delay: "0.25s", color: "bg-[#b8e986]/70" },
             { left: "88%", delay: "0.05s", color: "bg-[#dff0fa]" },
           ].map((piece, i) => (

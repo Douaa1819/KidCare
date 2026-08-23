@@ -7,6 +7,9 @@ export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'fr';
 
+/** Aligné sur le backend (Africa/Casablanca). */
+export const defaultTimeZone = 'Africa/Casablanca';
+
 export const localeNames: Record<Locale, string> = {
   fr: 'Français',
   ar: 'العربية',

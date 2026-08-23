@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState } from "react"
-import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { LogOut, ChevronDown, KeyRound } from "lucide-react"
@@ -37,7 +36,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100">
       {/* Slim top bar — z élevé quand menu ouvert pour passer au-dessus de la bottom nav parent (z-50) */}
       <header
         className={cn(
@@ -48,10 +47,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
       >
         <div className="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-sky-50">
-              <Image src="/Group 13.svg" alt="PetitsPas" width={28} height={28} />
-            </div>
-            <span className="text-sm font-bold text-gray-900">PetitsPas</span>
+            <span className="text-sm font-bold bg-gradient-to-r from-violet-700 to-purple-600 bg-clip-text text-transparent">KidCare</span>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={handleToggleLanguage} className="text-xs font-medium text-gray-500 hover:text-gray-700 border border-gray-200 rounded-full px-2.5 py-1">

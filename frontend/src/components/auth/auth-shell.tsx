@@ -1,4 +1,3 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { LanguageSwitcher } from "@/components/ui/language-switcher"
@@ -16,8 +15,6 @@ type AuthShellProps = {
   maxWidth?: "md" | "lg"
   /** Skip outer auth-card wrapper (multi-step flows with their own cards) */
   bareContent?: boolean
-  /** Soft logo entrance + float animation (login page) */
-  animateLogo?: boolean
 }
 
 export function AuthShell({
@@ -29,7 +26,6 @@ export function AuthShell({
   backLabel,
   maxWidth = "md",
   bareContent = false,
-  animateLogo = false,
 }: AuthShellProps) {
   const widthClass = maxWidth === "lg" ? "max-w-2xl" : "max-w-md"
 
@@ -43,24 +39,8 @@ export function AuthShell({
 
         <div className={`${widthClass} mx-auto`}>
           <header className="auth-hero flex flex-col items-center mb-6 sm:mb-8 text-center">
-            <div
-              className={`auth-hero-brand relative mb-5${animateLogo ? " auth-hero-brand--animated" : ""}`}
-            >
-              <span className="auth-hero-glow" aria-hidden />
-              <div className="auth-logo-ring relative z-[1] w-[5.25rem] h-[5.25rem] sm:w-24 sm:h-24 rounded-full overflow-hidden bg-white flex items-center justify-center">
-                <Image
-                  src="/Group 13.svg"
-                  alt="Logo PetitsPas"
-                  width={80}
-                  height={80}
-                  className="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem]"
-                />
-              </div>
-            </div>
-            <h1 className="auth-heading text-2xl sm:text-3xl font-semibold tracking-tight">
-              {title}
-            </h1>
-            <p className="auth-subtitle mt-2 text-sm sm:text-base max-w-sm leading-relaxed">
+            <h1 className="brand-wordmark mb-2">{title}</h1>
+            <p className="auth-subtitle text-sm sm:text-base max-w-sm leading-relaxed">
               {subtitle}
             </p>
           </header>

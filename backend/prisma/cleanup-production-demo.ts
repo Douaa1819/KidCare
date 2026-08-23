@@ -1,5 +1,5 @@
 /**
- * Prépare la base Petitspas pour une démo production :
+ * Prépare la base KidCare pour une démo production :
  * conserve 4 comptes, 2 enfants, classes/événements/menus/paramètres plateforme.
  *
  * Usage:
@@ -9,7 +9,7 @@
  *
  * Variables d'environnement :
  *   ADMIN_PASSWORD          — mot de passe Super Admin (défaut: change_me)
- *   DEMO_ADMIN_PASSWORD     — mot de passe Admin sophie@wlw.ma
+ *   DEMO_ADMIN_PASSWORD     — mot de passe Admin sophie@demo.kidcare.app
  *   DEMO_TEACHER_PASSWORD   — mot de passe enseignant
  *   DEMO_PARENT_PASSWORD    — mot de passe parent
  *   SHOW_DEMO_CREDENTIALS   — "true" pour afficher les identifiants en fin de script
@@ -26,10 +26,10 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const KEEP_USER_EMAILS = [
-  'admin@wlw.ma',
-  'sophie@wlw.ma',
+  'admin@demo.kidcare.app',
+  'sophie@demo.kidcare.app',
   'enseignant.sophie@test.com',
-  'sophie.parent@wlw.ma',
+  'sophie.parent@demo.kidcare.app',
 ] as const;
 
 type KeepEmail = (typeof KEEP_USER_EMAILS)[number];
@@ -49,10 +49,10 @@ const showCredentials =
 
 function resolveDemoPasswords(): Record<KeepEmail, string> {
   return {
-    'admin@wlw.ma': process.env.ADMIN_PASSWORD ?? 'change_me',
-    'sophie@wlw.ma': process.env.DEMO_ADMIN_PASSWORD ?? 'Sophie123!',
+    'admin@demo.kidcare.app': process.env.ADMIN_PASSWORD ?? 'change_me',
+    'sophie@demo.kidcare.app': process.env.DEMO_ADMIN_PASSWORD ?? 'Sophie123!',
     'enseignant.sophie@test.com': process.env.DEMO_TEACHER_PASSWORD ?? 'Teacher123!',
-    'sophie.parent@wlw.ma': process.env.DEMO_PARENT_PASSWORD ?? 'SophieParent123!',
+    'sophie.parent@demo.kidcare.app': process.env.DEMO_PARENT_PASSWORD ?? 'SophieParent123!',
   };
 }
 
@@ -165,13 +165,13 @@ async function ensureKeptUsersExist(
   }
 
   const famille = await tx.famille.upsert({
-    where: { emailPrincipal: 'sophie.parent@wlw.ma' },
+    where: { emailPrincipal: 'sophie.parent@demo.kidcare.app' },
     update: { languePreferee: 'fr' },
-    create: { emailPrincipal: 'sophie.parent@wlw.ma', languePreferee: 'fr' },
+    create: { emailPrincipal: 'sophie.parent@demo.kidcare.app', languePreferee: 'fr' },
   });
 
   const tuteur = await tx.tuteur.upsert({
-    where: { email: 'sophie.parent@wlw.ma' },
+    where: { email: 'sophie.parent@demo.kidcare.app' },
     update: {
       prenom: 'Sophie',
       nom: 'Parent',
@@ -180,7 +180,7 @@ async function ensureKeptUsersExist(
       familleId: famille.id,
     },
     create: {
-      email: 'sophie.parent@wlw.ma',
+      email: 'sophie.parent@demo.kidcare.app',
       prenom: 'Sophie',
       nom: 'Parent',
       telephone: '+212600000000',
@@ -198,8 +198,8 @@ async function ensureKeptUsersExist(
     tuteurId?: string;
     enseignantId?: string;
   }> = [
-    { email: 'admin@wlw.ma', prenom: 'Admin', nom: 'System', role: RoleUtilisateur.SUPER_ADMIN },
-    { email: 'sophie@wlw.ma', prenom: 'Sophie', nom: 'Admin', role: RoleUtilisateur.ADMIN },
+    { email: 'admin@demo.kidcare.app', prenom: 'Admin', nom: 'System', role: RoleUtilisateur.SUPER_ADMIN },
+    { email: 'sophie@demo.kidcare.app', prenom: 'Sophie', nom: 'Admin', role: RoleUtilisateur.ADMIN },
     {
       email: 'enseignant.sophie@test.com',
       prenom: 'Sophie',
@@ -208,7 +208,7 @@ async function ensureKeptUsersExist(
       enseignantId: enseignant.id,
     },
     {
-      email: 'sophie.parent@wlw.ma',
+      email: 'sophie.parent@demo.kidcare.app',
       prenom: 'Sophie',
       nom: 'Parent',
       role: RoleUtilisateur.PARENT,
@@ -506,9 +506,9 @@ async function main() {
       for (const email of KEEP_USER_EMAILS) {
         const hashed = await hashPassword(passwords[email]);
         const role =
-          email === 'admin@wlw.ma'
+          email === 'admin@demo.kidcare.app'
             ? RoleUtilisateur.SUPER_ADMIN
-            : email === 'sophie@wlw.ma'
+            : email === 'sophie@demo.kidcare.app'
               ? RoleUtilisateur.ADMIN
               : email === 'enseignant.sophie@test.com'
                 ? RoleUtilisateur.ENSEIGNANT

@@ -31,8 +31,12 @@ import { DevRequestTimingInterceptor } from './common/interceptors/dev-request-t
 
 @Module({
   imports: [
-    // Lit .env et expose ConfigService partout
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    // .env.local overrides .env (local Docker Postgres, etc.)
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      envFilePath: ['.env', '.env.local'],
+    }),
     PrismaModule,
     RateLimitModule,
     RedisModule,

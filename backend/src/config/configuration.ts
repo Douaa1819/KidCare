@@ -10,7 +10,5 @@ export default () => ({
   notificationEmailsEnabled:
     (process.env.NOTIFICATION_EMAILS_ENABLED ?? 'true').toLowerCase() !== 'false',
   appUrl: process.env.FRONTEND_URL ?? process.env.APP_URL ?? 'http://localhost:3001',
-  n8nAiRewriteWebhookUrl:
-    process.env.N8N_AI_REWRITE_WEBHOOK_URL ??
-    'https://n8n.srv787725.hstgr.cloud/webhook/petitspas/ai-resume-journee',
+  n8nAiRewriteWebhookUrl: process.env.N8N_AI_REWRITE_WEBHOOK_URL ?? '',
 });

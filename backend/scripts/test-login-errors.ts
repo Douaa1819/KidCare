@@ -12,10 +12,10 @@ async function login(email: string, password: string) {
 
 async function main() {
   const cases = [
-    { label: 'Valid admin', email: 'sophie@wlw.ma', password: 'Sophie123!' },
-    { label: 'Wrong password', email: 'sophie@wlw.ma', password: 'WrongPass1!' },
+    { label: 'Valid admin', email: 'sophie@demo.kidcare.app', password: 'Sophie123!' },
+    { label: 'Wrong password', email: 'sophie@demo.kidcare.app', password: 'WrongPass1!' },
     { label: 'Unknown email', email: 'nobody@example.com', password: 'WrongPass1!' },
-    { label: 'Valid parent', email: 'sophie.parent@wlw.ma', password: 'SophieParent123!' },
+    { label: 'Valid parent', email: 'sophie.parent@demo.kidcare.app', password: 'SophieParent123!' },
   ];
 
   for (const c of cases) {
