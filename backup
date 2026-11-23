@@ -1,0 +1,256 @@
+
+🎯 Objectif du projet
+
+Créer une plateforme SaaS moderne pour les crèches/garderies au Maroc & MENA, inspirée de Brightwheel / Procare / Majeunesse, entièrement :
+
+🇫🇷 + 🇸🇦 bilingue (FR/AR avec RTL)
+
+📱 mobile-first
+
+🎒 adaptée aux besoins locaux
+
+👩‍🏫 multi-rôles : Admin, Enseignant, Parent
+
+⚙️ 100% automatisée (Backend NestJS + Front Next.js )
+
+🧠 Fonctionnalités principales définies
+✅ Pour l’Admin
+
+Gérer les inscriptions en ligne (Accepter / Rejeter)
+
+Créer les comptes parents automatiquement après validation
+
+Créer les comptes enseignants
+
+Gérer les classes
+
+CREE  le Menu du jour
+
+Créer des Événements de classe
+
+Voir les statistiques
+
+Consulter les présences
+
+🧑‍🏫 Pour l’Enseignant
+
+Faire l’appel : Présent / Absent
+
+Voir les enfants de sa classe
+
+Enregistrer le Résumé de la journée (une fois → visible par tous les parents)
+
+
+
+Consulter les informations des enfants
+
+Consulter le menu du jour
+
+👨‍👩‍👧 Pour le Parent
+
+Voir les informations de son enfant
+
+Consulter l’historique des présences
+
+Lire le résumé de la journée
+
+Voir le menu du jour
+
+Accéder aux événements de la classe
+
+Gérer son profil (modifier infos + changer mot de passe)
+
+Recevoir les communications (messages enseignants/admin)
+
+🏗️ Backend NestJS — Avancement + Architecture
+
+Tu as déjà :
+
+🔹 Modèle Prisma (mono-centre)
+
+Tu as décidé de commencer avec une seule crèche, donc :
+
+pas de centreId dans les modèles.
+
+Models créés :
+Classe, Famille, Tuteur, Enfant, Inscription, Presence, JournalQuotidien, Menu, Events
+
+🔹 Étapes déjà réalisées
+
+Docker PostgreSQL installé
+
+NestJS configuré : ConfigModule, ValidationPipe, Swagger
+
+DTO + validation
+
+Création du module inscription
+
+Endpoint public /public/inscriptions → OK
+→ Retourne { applicationId, statut: "Candidature" }
+
+🗂️ Structure Next.js recommandée
+src/
+  app/
+    (public)/inscription
+    (auth)/login
+    (dashboard)/admin
+                     /enseignant
+                     /parent
+    layout.tsx
+  modules/
+    api/
+    inscriptions/
+    presences/
+    menus/
+    events/
+    journal/
+    profil/
+  components/
+    ui/
+  lib/
+    i18n/
+    rtl/
+  styles/
+  hooks/
+  types/
+
+📦 Dépendances Next.js
+
+TailwindCSS
+
+shadcn/ui
+
+Zod
+
+React Hook Form
+
+Next-intl (FR+AR)
+
+Supabase JS
+
+Ky (client API)
+
+Recharts
+
+🎨 Design System
+
+Couleurs : #AEDFF7, #B8E986, #FF6F61, #F5F5F5
+
+Font : Poppins (titres), Inter (texte)
+
+Composants : shadcn/ui
+
+RTL activé
+
+📲 Fonctionnalités Front (ce que tu construis)
+1️⃣ Formulaire d’inscription public
+
+Multi-step (Enfant → Parents → Personnes autorisées → Santé → Règlement)
+
+À la soumission → appelle l’API Nest → crée une Inscription
+
+2️⃣ Admin Dashboard
+
+Voir toutes les inscriptions
+
+Accepter / Rejeter
+
+Publier un menu du jour
+
+Gérer les événements
+
+Gérer les classes
+
+3️⃣ Enseignant Dashboard
+
+Faire les présences
+
+Voir les élèves
+
+Écrire le résumé de la journée (affiché à tous les parents)
+
+4️⃣ Parent Dashboard
+
+Voir la présence du jour
+
+Résumé de journée
+
+Menu du jour
+
+Événements
+
+Profil (édition + changer mot de passe)
+
+🔧 Descriptions détaillées des modules backend
+
+Tu m’as demandé plusieurs mini-descriptions techniques pour Augment (backend).
+Nous avons écrit :
+
+📌 Résumé de la journée (Enseignant → Parents)
+
+L’enseignant crée un seul résumé collectif par journée.
+Dès la publication, il devient visible dans le dashboard de tous les parents de la classe.
+
+📌 Menu du jour
+
+
+
+Blocking issues (1–6)
+1. API key. Every route except /health now needs an X-API-Key header. If API_KEY isn't set on the server, it refuses everything. Both workflows send the key, read from the n8n variable LINKEDIN_AGENT_API_KEY.
+2. Human-review routing. Items that ask for a call now reach n8n as action=human_review. The normal send path also checks for call requests before replying. The keyword match no longer fires on "rappelle" or "s'appelle".
+3. Recipient check. The "we clicked from the right profile" fallback is gone, and the page-wide text match is replaced by a check of the thread header. Reply-by-name only accepts a thread whose name matches the full requested name, and the first-name-only search is removed.
+4. Safety hold. A checkpoint, login wall, CAPTCHA frame, restriction or weekly-limit banner, or HTTP 429 now freezes every action. The hold persists until POST /safety-hold/clear.
+5. Initialization. /detect-connections returns 409 until /initialize-connections has run once, and initialize now covers the top 100. I also found that initialized contacts were still being treated as "to contact", so they would have been messaged anyway. That's fixed.
+6. State. A corrupt state file is restored from a backup copy, or the service stops, instead of silently starting from empty. Writes are now under the lock.
+
+Content fixes (7–9)
+- The false "J'ai liké et partagé votre post" line is gone. There's a MENTION_SHARED_POST=false switch in the n8n code for contacts the consultant really did like or share for.
+- The persona can no longer deny being an AI, and the invented testimonial and personal anecdotes are removed. Huntzen Jobs is now presented as Huntzen's own service.
+- The AI is told to ignore instructions inside candidate messages.
+- The AI now answers NO_REPLY or HUMAN_REVIEW when appropriate, and n8n drops replies that contain links or run too long.
+- There are 4 first-message variants, picked by a hash of the profile URL.
+
+Quality fixes (10–16)
+- Huntzen Jobs is detected in any spelling, so the J+14 follow-up isn't lost.
+- Thank-you messages and threads at the reply cap (4 per contact) are skipped.
+- Follow-ups skip contacts known only by thread URL.
+- The n8n reply loop now sends one reply at a time with a pause, instead of firing them in a burst.
+- SQL is parameterised, and Sent is only recorded when a message was actually sent.
+- Auto-accepting invitations is off by default.
+- Debug screenshots are off by default and rotated when on.
+
+Process (17–19)
+- Ramp-up: messages start at 10 per day and add 10 each week, replies start at 20 and add 20, and invitations start at 10 and add 5.
+- Pacing: the server enforces at least 30 s between sends.
+- Kill switch: POST /pause and POST /resume. The daily report shows holds and pauses.
+- Client sign-off: RISK_ACCEPTANCE.md (in French) is ready for the client to sign.
+
+Beyond your list
+- The n8n Wait node had no unit, so it probably waited 20 hours per contact. It's now 40–120 s.
+- I removed the mouse-movement and random-pause "human" simulation, which contradicted the "no evasion" claim.
+- Both cron triggers had no interval set. I set the inbox to 30 minutes and the prospecting one to 60. Change them if the client wants other values.
+- A failed first-message send no longer stops the rest of the batch.
+- The first-message timeout is now 180 s, because of the send gap.
+- The activity window now ends at 19:00 instead of 19:59.
+
+Before going live
+- Set API_KEY on the server and LINKEDIN_AGENT_API_KEY in n8n. If n8n blocks $env, use an n8n credential instead.
+- Run /initialize-connections once per account.
+- The n8n Postgres parameter syntax and node connections need a check after import.
+- Serve the API over HTTPS or a private network. The workflows still call http://46.62.194.135:5000.
+- I couldn't create the .env.example file because your permission settings block it. The main settings to define are API_KEY, HOST (127.0.0.1 if n8n is on the same machine), STATE_FILE, ACCOUNT_LABEL, the daily limits and the RAMP_* variables. I can put them in a differently named file or a doc if you'd like.
+
+
+Admin crée / modifie / publie le menu du jour.
+Les parents et enseignants peuvent seulement consulter.
+
+📌 Présences
+
+Enseignant fait l’appel en temps réel (présent/absent).
+Les présences s’affichent automatiquement dans le dashboard parent.
+
+📌 Événements
+
+Admin crée les événements de classe → visibles par les parents dans leur dashboard.
+
+
